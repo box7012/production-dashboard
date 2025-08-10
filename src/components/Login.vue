@@ -1,7 +1,7 @@
 <template>
-  <div class="login-modal-overlay" @click.self="$emit('close')">
-    <div class="login-modal-content">
-      <h2>로그인</h2>
+  <div class="login-view-container">
+    <div class="login-box">
+      <h2>대시보드 로그인</h2>
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="username">사용자 이름:</label>
@@ -12,15 +12,12 @@
           <input type="password" id="password" v-model="password" required />
         </div>
         <p v-if="error" class="error-message">{{ error }}</p>
-        <div class="button-group">
-          <button type="submit" :disabled="loading">{{ loading ? '로그인 중...' : '로그인' }}</button>
-          <button type="button" @click="$emit('close')">닫기</button>
-        </div>
+        <button type="submit" :disabled="loading" class="login-button">{{ loading ? '로그인 중...' : '로그인' }}</button>
       </form>
       <div class="demo-credentials">
         <p><strong>테스트 계정:</strong></p>
-        <p>아이디: admin</p>
-        <p>비밀번호: password</p>
+        <p>아이디: admin / 비밀번호: password</p>
+        <p>아이디: user / 비밀번호: password</p>
       </div>
     </div>
   </div>
@@ -28,8 +25,8 @@
 
 <script>
 export default {
-  name: 'LoginModal',
-  emits: ['login', 'close'],
+  name: 'LoginView', // Renamed from LoginModal
+  emits: ['login'],
   data() {
     return {
       username: '',
@@ -43,12 +40,12 @@ export default {
       this.error = null
       this.loading = true
       try {
-        // Emit the login event with credentials
         this.$emit('login', { username: this.username, password: this.password })
       } catch (err) {
-        // This catch block might not be necessary if error is handled in parent
         this.error = err.message || '로그인 처리 중 오류가 발생했습니다.'
       } finally {
+        // In a real app, you might want to keep loading until the parent confirms login.
+        // For this mock, we'll stop loading immediately.
         this.loading = false
       }
     },
@@ -57,29 +54,30 @@ export default {
 </script>
 
 <style scoped>
-.login-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+.login-view-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  height: 100vh;
+  background-color: #f0f2f5;
 }
 
-.login-modal-content {
+.login-box {
   background-color: white;
-  padding: 30px;
+  padding: 40px;
   border-radius: 8px;
   width: 400px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+h2 {
+  margin-bottom: 25px;
 }
 
 .form-group {
   margin-bottom: 15px;
+  text-align: left;
 }
 
 .form-group label {
@@ -89,7 +87,7 @@ export default {
 
 .form-group input {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   box-sizing: border-box;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -100,13 +98,23 @@ export default {
   margin-bottom: 15px;
 }
 
-.button-group {
-  display: flex;
-  justify-content: space-between;
+.login-button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  background-color: #2c3e50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.login-button:hover {
+  background-color: #34495e;
 }
 
 .demo-credentials {
-  margin-top: 20px;
   padding: 10px;
   background-color: #f3f3f3;
   border-radius: 4px;

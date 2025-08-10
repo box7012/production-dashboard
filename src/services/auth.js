@@ -3,13 +3,23 @@ export const login = (username, password) => {
     // Simulate network delay
     setTimeout(() => {
       if (username === 'admin' && password === 'password') {
-        console.log('Mock Auth: Login successful');
+        console.log('Mock Auth: Login successful for ADMIN');
         resolve({
           success: true,
           token: 'mock-jwt-token-for-admin-user',
           user: {
             name: 'Admin User',
             role: 'admin',
+          },
+        });
+      } else if (username === 'user' && password === 'password') {
+        console.log('Mock Auth: Login successful for GENERAL user');
+        resolve({
+          success: true,
+          token: 'mock-jwt-token-for-general-user',
+          user: {
+            name: 'General User',
+            role: 'general',
           },
         });
       } else {

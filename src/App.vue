@@ -1,49 +1,44 @@
 <template>
-  <div id="app">
-    <aside class="sidebar">
-      <ul class="tabs-list">
-        <li
-          v-for="tab in tabs"
-          :key="tab"
-          :class="{ active: currentTab === tab }"
-          @click="currentTab = tab"
-        >
-          {{ tab }}
-        </li>
-      </ul>
-      <div class="sidebar-footer">
-        <button v-if="!isAuthenticated" @click="showLoginModal = true" class="auth-button">로그인</button>
-        <button v-if="isAuthenticated" @click="handleLogout" class="auth-button">로그아웃</button>
-      </div>
-    </aside>
+  <div id="app-container">
+    <LoginView v-if="!isAuthenticated" @login="handleLogin" />
+    <div v-else class="main-layout">
+      <aside class="sidebar">
+        <ul class="tabs-list">
+          <li
+            v-for="tab in tabs"
+            :key="tab"
+            :class="{ active: currentTab === tab }"
+            @click="currentTab = tab"
+          >
+            {{ tab }}
+          </li>
+        </ul>
+        <div class="sidebar-footer">
+          <button @click="handleLogout" class="auth-button">로그아웃</button>
+        </div>
+      </aside>
 
-    <section class="content">
-      <Dashboard
-        v-if="dashboardData[currentTab]"
-        :title="currentTab"
-        :cards="dashboardData[currentTab].cards"
-        :defects="dashboardData[currentTab].defects"
-        :adminChartData="dashboardData[currentTab].adminChartData"
-        :userMode="userMode"
-        @update:targetProd="handleUpdateTargetProd"
-        @update:defectType="handleDefectChange"
-      />
-    </section>
-
-    <LoginModal
-      v-if="showLoginModal"
-      @close="showLoginModal = false"
-      @login="handleLogin"
-    />
+      <section class="content">
+        <Dashboard
+          v-if="dashboardData[currentTab]"
+          :title="currentTab"
+          :cards="dashboardData[currentTab].cards"
+          :defects="dashboardData[currentTab].defects"
+          :adminChartData="dashboardData[currentTab].adminChartData"
+          :userMode="userMode"
+          @update:targetProd="handleUpdateTargetProd"
+          @update:defectType="handleDefectChange"
+        />
+      </section>
+    </div>
   </div>
 </template>
 
 <script>
 import Dashboard from './components/Dashboard.vue'
-import LoginModal from './components/Login.vue'
+import LoginView from './components/Login.vue' // The file is Login.vue, but component name is LoginView
 import { login as apiLogin } from './services/auth.js'
 
-// ... (generateDefectChartData helper remains the same)
 const generateDefectChartData = (defects) => {
   if (!defects) return null
   const { selectedDefect, byLine, labels } = defects
@@ -61,9 +56,8 @@ const generateDefectChartData = (defects) => {
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginModal },
+  components: { Dashboard, LoginView },
   data() {
-    // ... (data initialization remains the same)
     const baseDefectData = {
       defectTypes: ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'],
       labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'],
@@ -85,22 +79,11 @@ export default {
     Object.values(initialDefects).forEach(defects => {
       defects.chartData = generateDefectChartData(defects)
     })
-
     const adminChartData = {
       labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
       datasets: [
-        {
-          label: '장비 1 온도 (°C)',
-          data: [65, 68, 72, 71, 75, 77],
-          borderColor: '#8e44ad',
-          fill: false,
-        },
-        {
-          label: '장비 2 온도 (°C)',
-          data: [62, 64, 65, 66, 68, 69],
-          borderColor: '#2980b9',
-          fill: false,
-        },
+        { label: '장비 1 온도 (°C)', data: [65, 68, 72, 71, 75, 77], borderColor: '#8e44ad', fill: false },
+        { label: '장비 2 온도 (°C)', data: [62, 64, 65, 66, 68, 69], borderColor: '#2980b9', fill: false },
       ],
     }
 
@@ -109,7 +92,6 @@ export default {
       currentTab: 'D02',
       userMode: 'general',
       isAuthenticated: false,
-      showLoginModal: false,
       dashboardData: {
         D02: {
           cards: [
@@ -138,7 +120,7 @@ export default {
             { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
-          defects: initialDefects.D02,
+          defects: initialDefects.D07,
           adminChartData
         },
         D14: {
@@ -153,7 +135,7 @@ export default {
             { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
-          defects: initialDefects.D02,
+          defects: initialDefects.D14,
           adminChartData
         },
         D20: {
@@ -168,7 +150,7 @@ export default {
             { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
-          defects: initialDefects.D02,
+          defects: initialDefects.D20,
           adminChartData
         },
       },
@@ -188,10 +170,8 @@ export default {
         const { user } = await apiLogin(username, password)
         localStorage.setItem('authToken', 'mock-jwt-token')
         localStorage.setItem('userRole', user.role)
-
         this.isAuthenticated = true
         this.userMode = user.role
-        this.showLoginModal = false
       } catch (error) {
         alert(error.message)
       }
@@ -220,7 +200,16 @@ export default {
 </script>
 
 <style>
-/* ... styles remain the same ... */
+/* Global styles */
+#app-container {
+  height: 100vh;
+}
+
+.main-layout {
+  display: flex;
+  height: 100%;
+}
+
 #app {
   display: flex;
   height: 100vh;
