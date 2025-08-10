@@ -13,7 +13,13 @@
       </ul>
     </aside>
     <section class="content">
-      <Dashboard :title="currentTab" :data="dashboardData[currentTab]" />
+      <Dashboard
+        :title="currentTab"
+        :cards="dashboardData[currentTab].cards"
+        :defects="dashboardData[currentTab].defects"
+        @update:targetProd="handleUpdateTargetProd"
+        @update:defectType="handleDefectChange"
+      />
     </section>
   </div>
 </template>
@@ -21,184 +27,104 @@
 <script>
 import Dashboard from './components/Dashboard.vue'
 
+// Helper to generate initial defect chart data
+const generateDefectChartData = (defects) => {
+  const { selectedDefect, byLine, labels } = defects
+  return {
+    labels,
+    datasets: [
+      {
+        label: selectedDefect,
+        data: byLine[selectedDefect],
+        backgroundColor: '#f87979',
+      },
+    ],
+  }
+}
+
 export default {
   name: 'App',
   components: { Dashboard },
   data() {
+    const initialDefects = {
+      D02: {
+        selectedDefect: 'bubble',
+        defectTypes: ['honing', 'bubble', 'dent', 'honing missing', 'crack', 'burst', ],
+        labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'],
+        byLine: {
+          honing: [5, 8, 3, 6],
+          찍힘: [2, 4, 5, 1],
+          오염: [6, 2, 1, 3],
+          파손: [1, 0, 2, 2],
+        },
+      },
+      D07: {
+        selectedDefect: '오염',
+        defectTypes: ['스크래치', '찍힘', '오염', '기타'],
+        labels: ['Line A', 'Line B', 'Line C'],
+        byLine: {
+          스크래치: [3, 5, 2],
+          찍힘: [6, 2, 4],
+          오염: [1, 3, 5],
+          기타: [4, 1, 1],
+        },
+      },
+    }
+
+    // Add chartData to initial defects
+    initialDefects.D02.chartData = generateDefectChartData(initialDefects.D02)
+    initialDefects.D07.chartData = generateDefectChartData(initialDefects.D07)
+
     return {
       tabs: ['D02', 'D07', 'D14', 'D20'],
       currentTab: 'D02',
       dashboardData: {
-        D02: [
-          {
-            title: '오늘 생산량',
-            value: 1200,
-            unit: '개',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '생산량',
-                  data: [200, 180, 220, 210, 190, 200],
-                  borderColor: '#42b983',
-                  fill: false,
-                },
-              ],
+        D02: {
+          cards: [
+            {
+              title: '오늘 생산량',
+              value: 1200,
+              unit: '개',
+              targetProd: 2000,
+              chartData: { labels: ['1시', '2시'], datasets: [{ data: [200, 180] }] },
             },
-          },
-          {
-            title: '가동률',
-            value: '85%',
-            unit: '',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '가동률(%)',
-                  data: [80, 82, 85, 88, 84, 85],
-                  borderColor: '#ff9800',
-                  fill: false,
-                },
-              ],
+            { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
+            { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
+          ],
+          defects: initialDefects.D02,
+        },
+        D07: {
+          cards: [
+            {
+              title: '오늘 생산량',
+              value: 1500,
+              unit: '개',
+              targetProd: 1800,
+              chartData: { labels: ['1시', '2시'], datasets: [{ data: [250, 260] }] },
             },
-          },
-          {
-            title: '불량률',
-            value: '1.8%',
-            unit: '',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '불량률(%)',
-                  data: [2.1, 1.9, 1.8, 1.7, 1.9, 1.8],
-                  borderColor: '#f44336',
-                  fill: false,
-                },
-              ],
-            },
-          },
-        ],
-        D07: [
-          {
-            title: '오늘 생산량',
-            value: 1500,
-            unit: '개',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '생산량',
-                  data: [250, 260, 240, 270, 250, 230],
-                  borderColor: '#42b983',
-                  fill: false,
-                },
-              ],
-            },
-          },
-          {
-            title: '가동률',
-            value: '90%',
-            unit: '',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '가동률(%)',
-                  data: [88, 89, 92, 91, 90, 90],
-                  borderColor: '#ff9800',
-                  fill: false,
-                },
-              ],
-            },
-          },
-          {
-            title: '불량률',
-            value: '1.2%',
-            unit: '',
-            chartData: {
-              labels: ['1시', '2시', '3시', '4시', '5시', '6시'],
-              datasets: [
-                {
-                  label: '불량률(%)',
-                  data: [1.1, 1.3, 1.2, 1.0, 1.4, 1.2],
-                  borderColor: '#f44336',
-                  fill: false,
-                },
-              ],
-            },
-          },
-        ],
-        D14: [
-          {
-            title: '주간 생산량',
-            value: 8400,
-            unit: '개',
-            chartData: {
-              labels: ['월', '화', '수', '목', '금', '토', '일'],
-              datasets: [
-                {
-                  label: '생산량',
-                  data: [1200, 1300, 1100, 1400, 1250, 1150, 1000],
-                  borderColor: '#42b983',
-                  fill: false,
-                },
-              ],
-            },
-          },
-          {
-            title: '평균 가동률',
-            value: '88%',
-            unit: '',
-            chartData: {
-              labels: ['월', '화', '수', '목', '금', '토', '일'],
-              datasets: [
-                {
-                  label: '가동률(%)',
-                  data: [85, 88, 86, 90, 89, 87, 83],
-                  borderColor: '#ff9800',
-                  fill: false,
-                },
-              ],
-            },
-          },
-        ],
-        D20: [
-          {
-            title: '월간 생산량',
-            value: 35000,
-            unit: '개',
-            chartData: {
-              labels: ['1주', '2주', '3주', '4주'],
-              datasets: [
-                {
-                  label: '생산량',
-                  data: [8400, 8800, 8200, 9600],
-                  borderColor: '#42b983',
-                  fill: false,
-                },
-              ],
-            },
-          },
-          {
-            title: '월간 불량률',
-            value: '1.5%',
-            unit: '',
-            chartData: {
-              labels: ['1주', '2주', '3주', '4주'],
-              datasets: [
-                {
-                  label: '불량률(%)',
-                  data: [1.6, 1.4, 1.7, 1.3],
-                  borderColor: '#f44336',
-                  fill: false,
-                },
-              ],
-            },
-          },
-        ],
+            { title: '가동률', value: '90%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [88, 89] }] } },
+          ],
+          defects: initialDefects.D07,
+        },
+        D14: { cards: [], defects: null }, // No defect data for D14 and D20 yet
+        D20: { cards: [], defects: null },
       },
     }
+  },
+  methods: {
+    handleUpdateTargetProd({ tab, index, value }) {
+      const card = this.dashboardData[tab]?.cards[index]
+      if (card) {
+        card.targetProd = Number(value)
+      }
+    },
+    handleDefectChange({ newDefectType }) {
+      const defects = this.dashboardData[this.currentTab]?.defects
+      if (defects) {
+        defects.selectedDefect = newDefectType
+        defects.chartData = generateDefectChartData(defects)
+      }
+    },
   },
 }
 </script>
