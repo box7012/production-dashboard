@@ -23,6 +23,7 @@
         :title="currentTab"
         :cards="dashboardData[currentTab].cards"
         :defects="dashboardData[currentTab].defects"
+        :adminChartData="dashboardData[currentTab].adminChartData"
         :userMode="userMode"
         @update:targetProd="handleUpdateTargetProd"
         @update:defectType="handleDefectChange"
@@ -85,6 +86,24 @@ export default {
       defects.chartData = generateDefectChartData(defects)
     })
 
+    const adminChartData = {
+      labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+      datasets: [
+        {
+          label: '장비 1 온도 (°C)',
+          data: [65, 68, 72, 71, 75, 77],
+          borderColor: '#8e44ad',
+          fill: false,
+        },
+        {
+          label: '장비 2 온도 (°C)',
+          data: [62, 64, 65, 66, 68, 69],
+          borderColor: '#2980b9',
+          fill: false,
+        },
+      ],
+    }
+
     return {
       tabs: ['D02', 'D07', 'D14', 'D20'],
       currentTab: 'D02',
@@ -105,6 +124,7 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D02,
+          adminChartData
         },
         D07: {
           cards: [
@@ -119,6 +139,7 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D02,
+          adminChartData
         },
         D14: {
           cards: [
@@ -133,6 +154,7 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D02,
+          adminChartData
         },
         D20: {
           cards: [
@@ -147,6 +169,7 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D02,
+          adminChartData
         },
       },
     }
@@ -163,14 +186,14 @@ export default {
     async handleLogin({ username, password }) {
       try {
         const { user } = await apiLogin(username, password)
-        localStorage.setItem('authToken', 'mock-jwt-token') // In real app, use token from response
+        localStorage.setItem('authToken', 'mock-jwt-token')
         localStorage.setItem('userRole', user.role)
 
         this.isAuthenticated = true
         this.userMode = user.role
         this.showLoginModal = false
       } catch (error) {
-        alert(error.message) // Simple error feedback
+        alert(error.message)
       }
     },
     handleLogout() {
@@ -197,6 +220,7 @@ export default {
 </script>
 
 <style>
+/* ... styles remain the same ... */
 #app {
   display: flex;
   height: 100vh;

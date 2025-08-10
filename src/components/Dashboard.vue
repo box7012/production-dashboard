@@ -19,21 +19,29 @@
       <h3>결함 별 검출 수</h3>
       <DefectCheck :defects="defects" @update:defectType="onDefectChange" />
     </div>
+
+    <AdminChart
+      v-if="userMode === 'admin' && adminChartData"
+      :chartData="adminChartData"
+      title="장비 온도 모니터링"
+    />
   </div>
 </template>
 
 <script>
 import ProductionStatusCard from './ProductionStatusCard.vue'
 import DefectCheck from './DefectCheck.vue'
+import AdminChart from './AdminChart.vue' // Import the new component
 
 export default {
   name: 'ProductionDashboard',
-  components: { ProductionStatusCard, DefectCheck },
+  components: { ProductionStatusCard, DefectCheck, AdminChart }, // Register the new component
   props: {
     title: String,
     cards: Array,
     defects: Object,
     userMode: String,
+    adminChartData: Object, // Add the new prop
   },
   emits: ['update:targetProd', 'update:defectType'],
   methods: {
