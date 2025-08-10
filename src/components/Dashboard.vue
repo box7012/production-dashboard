@@ -15,7 +15,7 @@
     </div>
 
     <div v-if="defects" class="defect-chart-section">
-      <h3>라인별 불량 현황</h3>
+      <h3>결함 별 검출 수</h3>
       <DefectCheck :defects="defects" @update:defectType="onDefectChange" />
     </div>
   </div>
