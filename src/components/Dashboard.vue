@@ -8,6 +8,7 @@
         :title="item.title"
         :value="item.value"
         :unit="item.unit"
+        :chartData="item.chartData"
       />
     </div>
   </div>
