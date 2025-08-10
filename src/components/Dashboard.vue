@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>{{ title }} 대시보드</h2>
+    <h2>{{ title }} 대시보드 <span v-if="userMode === 'admin'">(관리자 모드)</span></h2>
     <div class="dashboard-cards">
       <ProductionStatusCard
         v-for="(card, idx) in cards"
@@ -10,6 +10,7 @@
         :unit="card.unit"
         :chartData="card.chartData"
         :targetProd="card.targetProd"
+        :userMode="userMode"
         @update:targetProd="onUpdateTargetProd(idx, $event)"
       />
     </div>
@@ -23,7 +24,7 @@
 
 <script>
 import ProductionStatusCard from './ProductionStatusCard.vue'
-import DefectCheck from './DefectCheck.vue' // This will be the defect chart component
+import DefectCheck from './DefectCheck.vue'
 
 export default {
   name: 'ProductionDashboard',
@@ -32,6 +33,7 @@ export default {
     title: String,
     cards: Array,
     defects: Object,
+    userMode: String,
   },
   emits: ['update:targetProd', 'update:defectType'],
   methods: {

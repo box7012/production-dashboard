@@ -7,7 +7,7 @@
       <span>달성률: {{ achievementRate }}%</span>
     </div>
 
-    <div v-if="isProductionCard" class="target-input">
+    <div v-if="isProductionCard && userMode === 'admin'" class="target-input">
       <label>목표:</label>
       <input type="number" :value="targetProd" @input="onTargetChange" />
     </div>
@@ -44,6 +44,7 @@ export default {
     unit: String,
     chartData: Object,
     targetProd: Number,
+    userMode: String,
   },
   emits: ['update:targetProd'],
   data() {
