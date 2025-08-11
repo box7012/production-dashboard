@@ -338,22 +338,20 @@ export default {
       const productionData = [];
       const targetData = [];
 
-      labels.forEach(tabName => {
-        const tabData = this.dashboardData[tabName];
-        if (tabData && tabData.cards) {
-          const productionCard = tabData.cards.find(c => c.title === '생산량');
-          if (productionCard) {
-            productionData.push(productionCard.value);
-            targetData.push(productionCard.targetProd);
-          } else {
-            productionData.push(0);
-            targetData.push(0);
-          }
+      // overallTimeRange에 맞춰 각 라인의 카드 데이터를 새로 생성
+      const cardsForOverallRange = generateCardData(this.overallTimeRange);
+      const productionCard = cardsForOverallRange.find(c => c.title === '생산량');
+
+      // labels 배열의 각 항목에 대해 데이터 추가
+      for (let i = 0; i < labels.length; i++) {
+        if (productionCard) {
+          productionData.push(productionCard.value);
+          targetData.push(productionCard.targetProd);
         } else {
           productionData.push(0);
           targetData.push(0);
         }
-      });
+      }
 
       return {
         labels,
