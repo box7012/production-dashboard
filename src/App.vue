@@ -19,8 +19,9 @@
       </aside>
 
       <section class="content">
+        <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
         <Dashboard
-          v-if="dashboardData[currentTab]"
+          v-else-if="dashboardData[currentTab]"
           :title="currentTab"
           :cards="dashboardData[currentTab].cards"
           :defects="dashboardData[currentTab].defects"
@@ -29,22 +30,36 @@
           @update:targetProd="handleUpdateTargetProd"
           @update:defectType="handleDefectChange"
         />
+        <FileDownloadTable v-if="userMode === 'admin'" />
       </section>
     </div>
   </div>
 </template>
 
 <script>
-import Dashboard from './components/Dashboard.vue'
+import Dashboard from './components/Dashboard.vue';
+import FileDownloadTable from './components/FileDownloadTable.vue';
 import LoginView from './components/Login.vue' // The file is Login.vue, but component name is LoginView
+import ProductionSummary from './components/ProductionSummary.vue'
 import { login as apiLogin } from './services/auth.js'
 
 const generateDefectChartData = (defects) => {
   if (!defects) return null
-  const { selectedDefect, byLine, labels } = defects
+  const { selectedDefect, byLine, labels, totalByHour } = defects
+  const defectData = byLine[selectedDefect]
+  const normalData = labels.map((_, idx) => {
+    const total = totalByHour?.[idx] ?? 0
+    return Math.max(total - (defectData[idx] || 0), 0)
+  })
+
   return {
     labels,
     datasets: [
+      {
+        label: '정상',
+        data: normalData,
+        backgroundColor: '#4caf50',
+      },
       {
         label: selectedDefect,
         data: byLine[selectedDefect],
@@ -56,11 +71,14 @@ const generateDefectChartData = (defects) => {
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary },
   data() {
     const baseDefectData = {
       defectTypes: ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'],
-      labels: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'],
+      labels: [
+        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+      ],
       byLine: {
         honing: [5, 8, 3, 6, 4, 2, 7, 5, 6, 3, 8, 5],
         bubble: [2, 4, 5, 1, 3, 6, 2, 4, 5, 1, 3, 2],
@@ -69,11 +87,12 @@ export default {
         crack: [6, 2, 1, 3, 2, 1, 4, 5, 3, 2, 1, 4],
         burst: [2, 4, 5, 1, 3, 2, 4, 3, 2, 1, 2, 3],
       },
+      totalByHour: [50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50]
     }
     const initialDefects = {
-      D02: { ...baseDefectData, selectedDefect: 'bubble' },
-      D07: { ...baseDefectData, selectedDefect: 'dent' },
-      D14: { ...baseDefectData, selectedDefect: 'crack' },
+      D02: { ...baseDefectData, selectedDefect: 'honing' },
+      D07: { ...baseDefectData, selectedDefect: 'honing' },
+      D14: { ...baseDefectData, selectedDefect: 'honing' },
       D20: { ...baseDefectData, selectedDefect: 'honing' },
     }
     Object.values(initialDefects).forEach(defects => {
@@ -88,8 +107,8 @@ export default {
     }
 
     return {
-      tabs: ['D02', 'D07', 'D14', 'D20'],
-      currentTab: 'D02',
+      tabs: ['전체 현황', 'D02', 'D07', 'D14', 'D20'],
+      currentTab: '전체 현황',
       userMode: 'general',
       isAuthenticated: false,
       dashboardData: {
@@ -154,6 +173,40 @@ export default {
           adminChartData
         },
       },
+    }
+  },
+  computed: {
+    summaryChartData() {
+      const labels = ['D02', 'D07', 'D14', 'D20'];
+      const productionData = [];
+      const targetData = [];
+
+      labels.forEach(tab => {
+        const todayProductionCard = this.dashboardData[tab]?.cards.find(c => c.title === '오늘 생산량');
+        if (todayProductionCard) {
+          productionData.push(todayProductionCard.value);
+          targetData.push(todayProductionCard.targetProd);
+        } else {
+          productionData.push(0);
+          targetData.push(0);
+        }
+      });
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: '오늘 생산량',
+            backgroundColor: '#4caf50',
+            data: productionData
+          },
+          {
+            label: '목표 생산량',
+            backgroundColor: '#f87979',
+            data: targetData
+          }
+        ]
+      };
     }
   },
   created() {
