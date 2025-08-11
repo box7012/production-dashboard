@@ -1,4 +1,3 @@
-
 <template>
   <div class="file-download-container">
     <h3>다운로드 가능 파일 목록</h3>
@@ -27,31 +26,61 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
-
-const files = ref([]);
-const error = ref(null);
-const backendUrl = 'http://localhost:3000'; // 백엔드 서버 주소
-
-// 컴포넌트가 마운트될 때 파일 목록을 가져옵니다.
-onMounted(async () => {
-  try {
-    const response = await fetch(`${backendUrl}/api/files`);
-    if (!response.ok) {
-      throw new Error('서버에서 파일 목록을 가져오는 데 실패했습니다.');
+<script>
+export default {
+  props: {
+    currentTab: String
+  },
+  data() {
+    return {
+      files: [],
+      error: null,
+      backendUrl: 'http://192.168.0.95:8081',
+    };
+  },
+  watch: {
+    currentTab: {
+      immediate: true,
+      handler(newTab) {
+        this.fetchFiles(newTab);
+      }
     }
-    files.value = await response.json();
-  } catch (err) {
-    console.error(err);
-    error.value = '파일 목록을 불러올 수 없습니다. 백엔드 서버가 실행 중인지 확인하세요.';
-  }
-});
+  },
+  methods: {
+    async fetchFiles(tab) {
+      this.error = null;
+      this.files = [];
 
-// 다운로드 URL을 생성하는 함수
-const getDownloadUrl = (filename) => {
-  return `${backendUrl}/api/download/${encodeURIComponent(filename)}`;
-};
+      let apiUrl;
+      if (tab === '전체 현황') {
+        apiUrl = `${this.backendUrl}/api/files/all`;
+      } else {
+        apiUrl = `${this.backendUrl}/api/files/${encodeURIComponent(tab)}`;
+      }
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error('서버에서 파일 목록을 가져오는 데 실패했습니다.');
+        this.files = await response.json();
+      } catch (err) {
+        console.error(err);
+        this.error = '파일 목록을 불러올 수 없습니다. 백엔드 서버가 실행 중인지 확인하세요.';
+      }
+    },
+    getDownloadUrl(filename) {
+      let folderPath = '';
+      if (this.currentTab && this.currentTab !== '전체 현황') {
+        folderPath = this.currentTab;
+      } else {
+        folderPath = 'all';
+      }
+      return `${this.backendUrl}/api/download/${encodeURIComponent(folderPath)}/${encodeURIComponent(filename)}`;
+    }
+  },
+  mounted() {
+    this.fetchFiles(this.currentTab);
+  }
+}
 </script>
 
 <style scoped>

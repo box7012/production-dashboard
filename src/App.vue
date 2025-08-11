@@ -50,7 +50,7 @@
             :chartData="dashboardData[currentTab].surfaceCheck.chartData"
           />
         </div>
-        <FileDownloadTable v-if="userMode === 'admin'" />
+        <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
       </section>
     </div>
   </div>
