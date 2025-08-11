@@ -1,7 +1,7 @@
 <template>
   <div class="login-view-container">
     <div class="login-box">
-      <h2>대시보드 로그인</h2>
+      <img src="../assets/hj_logo.png" alt="HJ Logo" class="logo" />
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="username">사용자 이름:</label>
@@ -25,7 +25,7 @@
 
 <script>
 export default {
-  name: 'LoginView', // Renamed from LoginModal
+  name: 'LoginView',
   emits: ['login'],
   data() {
     return {
@@ -44,8 +44,6 @@ export default {
       } catch (err) {
         this.error = err.message || '로그인 처리 중 오류가 발생했습니다.'
       } finally {
-        // In a real app, you might want to keep loading until the parent confirms login.
-        // For this mock, we'll stop loading immediately.
         this.loading = false
       }
     },
@@ -54,11 +52,23 @@ export default {
 </script>
 
 <style scoped>
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+.logo {
+  user-select: none;     /* 텍스트 선택 막기 */
+  pointer-events: none;  /* 마우스 이벤트 무시 */
+}
+
 .login-view-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100vh;  /* 뷰포트 높이 100% */
+  width: 100vw;   /* 뷰포트 너비 100% */
   background-color: #f0f2f5;
 }
 

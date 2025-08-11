@@ -3,6 +3,7 @@
     <LoginView v-if="!isAuthenticated" @login="handleLogin" />
     <div v-else class="main-layout">
       <aside class="sidebar">
+        <img src="./assets/hj_logo.png" alt="HJ Logo" class="logo" />
         <ul class="tabs-list">
           <li
             v-for="tab in tabs"
@@ -19,7 +20,7 @@
       </aside>
 
       <section class="content">
-        <div v-if="userMode !== 'admin'" class="work-mode-selection" style="margin-bottom: 16px;">
+        <div v-if="userMode !== 'admin'" class="work-mode-selection">
           <label>작업 모드 선택 : </label>
           <button
             :class="{ active: workMode === 'production_manager' }"
@@ -34,40 +35,41 @@
             작업자
           </button>
         </div>
-          <template v-if="workMode === 'production_manager'">
-            <DefectCheck 
-              :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
-              @update:timeRange="handleTimeRangeChange"
+          <!-- admin인 경우에만 보이는 기존 콘텐츠 -->
+        <div v-if="userMode === 'admin' || (userMode === 'general' && workMode === 'production_manager')">
+          <DefectCheck 
+            :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
+            @update:timeRange="handleTimeRangeChange"
+          />
+          <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
+          <div v-else>
+            <Dashboard
+              v-if="dashboardData[currentTab]"
+              :title="currentTab"
+              :cards="dashboardData[currentTab].cards"
+              :defectChartData="dashboardData[currentTab].defects.chartData" 
+              :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
+              :defectTypes="dashboardData[currentTab].defects.defectTypes" 
+              :adminChartData="dashboardData[currentTab].adminChartData"
+              :userMode="userMode"
+              @update:targetProd="handleUpdateTargetProd"
+              @update:defectType="handleDefectChange"
             />
-            <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
-            <div v-else>
-              <Dashboard
-                v-if="dashboardData[currentTab]"
-                :title="currentTab"
-                :cards="dashboardData[currentTab].cards"
-                :defectChartData="dashboardData[currentTab].defects.chartData" 
-                :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
-                :defectTypes="dashboardData[currentTab].defects.defectTypes" 
-                :adminChartData="dashboardData[currentTab].adminChartData"
-                :userMode="userMode"
-                @update:targetProd="handleUpdateTargetProd"
-                @update:defectType="handleDefectChange"
-              />
-              <ChamferCheck 
-                v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
-                :chartData="dashboardData[currentTab].chamferCheck.chartData"
-              />
-              <OCRCheck 
-                v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
-                :chartData="dashboardData[currentTab].ocrCheck.chartData"
-              />
-              <SurfaceCheck 
-                v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
-                :chartData="dashboardData[currentTab].surfaceCheck.chartData"
-              />
-            </div>
-            <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
-          </template>
+            <ChamferCheck 
+              v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
+              :chartData="dashboardData[currentTab].chamferCheck.chartData"
+            />
+            <OCRCheck 
+              v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
+              :chartData="dashboardData[currentTab].ocrCheck.chartData"
+            />
+            <SurfaceCheck 
+              v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
+              :chartData="dashboardData[currentTab].surfaceCheck.chartData"
+            />
+          </div>
+          <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
+        </div>
           <template v-else-if="workMode === 'worker'">
             <WorkerImageViewerVue 
               :key="workMode"
@@ -406,10 +408,17 @@ export default {
     async handleLogin({ username, password }) {
       try {
         const { user } = await apiLogin(username, password)
+
         localStorage.setItem('authToken', 'mock-jwt-token')
         localStorage.setItem('userRole', user.role)
+
         this.isAuthenticated = true
         this.userMode = user.role
+
+        if (this.userMode === 'admin') {
+          this.workMode = 'production_manager'  // 관리자면 무조건 production_manager
+        }
+
       } catch (error) {
         alert(error.message)
       }
@@ -465,7 +474,17 @@ export default {
     },
     setWorkMode(mode) {
       this.workMode = mode;
-      console.log("changed")
+      console.log("changed");
+
+      // 렌더링 트리거용 currentTab 임시 변경
+      const oldTab = this.currentTab;
+
+      // 탭을 null로 바꿨다가 다음 틱에 원래 값 복구
+      this.currentTab = null;
+
+      this.$nextTick(() => {
+        this.currentTab = oldTab;
+      });
     }
   },
   watch: {
@@ -512,6 +531,30 @@ export default {
   display: flex;
   height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.work-mode-selection {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+  font-weight: bold;
+}
+
+button {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  border-radius: 4px;
+}
+button.active {
+  background-color: #34495e;
+  color: white;
+  border-color: #34495e;
 }
 
 .sidebar {
