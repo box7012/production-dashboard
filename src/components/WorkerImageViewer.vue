@@ -1,15 +1,29 @@
-
 <template>
   <div class="image-viewer-container">
     <h3>{{ tab }} 이미지 뷰어</h3>
+
     <div v-if="loading" class="loading-message">이미지 로딩 중...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
     <div v-else-if="images.length === 0" class="no-images-message">표시할 이미지가 없습니다.</div>
+
     <div v-else class="image-grid">
-      <div v-for="image in images" :key="image" class="image-item">
+      <div
+        v-for="image in images"
+        :key="image"
+        class="image-item"
+        @click="openModal(image)"
+        style="cursor: pointer;"
+      >
         <img :src="getImageUrl(image)" :alt="image" />
         <p>{{ image }}</p>
       </div>
+    </div>
+
+    <!-- 모달 -->
+    <div v-if="selectedImage" class="modal" @click.self="closeModal">
+      <span class="close-button" @click="closeModal">&times;</span>
+      <img class="modal-content" :src="getImageUrl(selectedImage)" :alt="selectedImage" />
+      <div class="caption">{{ selectedImage }}</div>
     </div>
   </div>
 </template>
@@ -28,12 +42,13 @@ export default {
       images: [],
       loading: false,
       error: null,
-      backendUrl: 'http://192.168.0.95:8081', // 백엔드 서버 주소
+      selectedImage: null, // 클릭한 이미지 저장
+      backendUrl: 'http://192.168.0.95:8081',
     };
   },
   watch: {
     tab: {
-      immediate: true, // 컴포넌트가 처음 마운트될 때도 실행
+      immediate: true,
       handler: 'fetchImages',
     },
   },
@@ -59,16 +74,64 @@ export default {
     getImageUrl(filename) {
       return `${this.backendUrl}/api/images/serve/${this.tab}/${encodeURIComponent(filename)}`;
     },
+    openModal(image) {
+      this.selectedImage = image;
+    },
+    closeModal() {
+      this.selectedImage = null;
+    },
   },
 };
 </script>
 
+
 <style scoped>
+
+/* 모달 스타일 추가 */
+.modal {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  max-width: 90%;
+  max-height: 80vh;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.close-button {
+  position: fixed;
+  top: 20px;
+  right: 40px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.caption {
+  margin-top: 10px;
+  color: white;
+  text-align: center;
+  font-size: 1em;
+}
 .image-viewer-container {
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;
   margin-top: 20px;
+  min-width: 800px;
 }
 h3 {
   margin-top: 0;
