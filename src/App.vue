@@ -19,12 +19,23 @@
       </aside>
 
       <section class="content">
+        <DefectCheck 
+          :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
+          @update:timeRange="handleTimeRangeChange"
+        />
         <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
         <div v-else>
-          <DefectCheck 
-            v-if="dashboardData[currentTab] && dashboardData[currentTab].defects"
-            :current-range="dashboardData[currentTab].defects.selectedTimeRange"
-            @update:timeRange="handleTimeRangeChange"
+          <Dashboard
+            v-if="dashboardData[currentTab]"
+            :title="currentTab"
+            :cards="dashboardData[currentTab].cards"
+            :defectChartData="dashboardData[currentTab].defects.chartData" 
+            :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
+            :defectTypes="dashboardData[currentTab].defects.defectTypes" 
+            :adminChartData="dashboardData[currentTab].adminChartData"
+            :userMode="userMode"
+            @update:targetProd="handleUpdateTargetProd"
+            @update:defectType="handleDefectChange"
           />
           <ChamferCheck 
             v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
@@ -37,18 +48,6 @@
           <SurfaceCheck 
             v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
             :chartData="dashboardData[currentTab].surfaceCheck.chartData"
-          />
-          <Dashboard
-            v-if="dashboardData[currentTab]"
-            :title="currentTab"
-            :cards="dashboardData[currentTab].cards"
-            :defectChartData="dashboardData[currentTab].defects.chartData" 
-            :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
-            :defectTypes="dashboardData[currentTab].defects.defectTypes" 
-            :adminChartData="dashboardData[currentTab].adminChartData"
-            :userMode="userMode"
-            @update:targetProd="handleUpdateTargetProd"
-            @update:defectType="handleDefectChange"
           />
         </div>
         <FileDownloadTable v-if="userMode === 'admin'" />
@@ -115,6 +114,63 @@ const generateMonthlyData = (isDefect = false) => {
     const ngCount = Array.from({ length: 12 }, () => Math.floor(Math.random() * 500) + 50);
     return { labels, okCount, ngCount };
   }
+};
+
+// 카드 데이터 생성 함수
+const generateCardData = (timeRange) => {
+  let productionValue, operatingRate, defectRate;
+  let prodChartLabels, prodChartData, opRateChartLabels, opRateChartData, defRateChartLabels, defRateChartData;
+
+  switch (timeRange) {
+    case 'weekly':
+      productionValue = Math.floor(Math.random() * 10000) + 5000; // 주간 생산량
+      operatingRate = `${(Math.random() * 5 + 80).toFixed(1)}%`; // 주간 가동률
+      defectRate = `${(Math.random() * 0.5 + 1.5).toFixed(1)}%`; // 주간 불량률
+
+      prodChartLabels = ['월', '화', '수', '목', '금', '토', '일'];
+      prodChartData = Array.from({ length: 7 }, () => Math.floor(Math.random() * 1500) + 500);
+      opRateChartLabels = prodChartLabels;
+      opRateChartData = Array.from({ length: 7 }, () => Math.floor(Math.random() * 10) + 80);
+      defRateChartLabels = prodChartLabels;
+      defRateChartData = Array.from({ length: 7 }, () => (Math.random() * 0.5 + 1.5).toFixed(1));
+      break;
+    case 'monthly':
+      productionValue = Math.floor(Math.random() * 50000) + 20000; // 월간 생산량
+      operatingRate = `${(Math.random() * 3 + 85).toFixed(1)}%`; // 월간 가동률
+      defectRate = `${(Math.random() * 0.3 + 1.0).toFixed(1)}%`; // 월간 불량률
+
+      prodChartLabels = ['1주', '2주', '3주', '4주'];
+      prodChartData = Array.from({ length: 4 }, () => Math.floor(Math.random() * 15000) + 5000);
+      opRateChartLabels = prodChartLabels;
+      opRateChartData = Array.from({ length: 4 }, () => Math.floor(Math.random() * 5) + 85);
+      defRateChartLabels = prodChartLabels;
+      defRateChartData = Array.from({ length: 4 }, () => (Math.random() * 0.3 + 1.0).toFixed(1));
+      break;
+    default: // daily
+      productionValue = Math.floor(Math.random() * 1500) + 500; // 오늘 생산량
+      operatingRate = `${(Math.random() * 10 + 75).toFixed(1)}%`; // 오늘 가동률
+      defectRate = `${(Math.random() * 1.0 + 1.0).toFixed(1)}%`; // 오늘 불량률
+
+      prodChartLabels = ['0시', '6시', '12시', '18시', '24시'];
+      prodChartData = Array.from({ length: 5 }, () => Math.floor(Math.random() * 300) + 100);
+      opRateChartLabels = prodChartLabels;
+      opRateChartData = Array.from({ length: 5 }, () => Math.floor(Math.random() * 15) + 70);
+      defRateChartLabels = prodChartLabels;
+      defRateChartData = Array.from({ length: 5 }, () => (Math.random() * 1.0 + 1.0).toFixed(1));
+      break;
+  }
+
+  return [
+    {
+      title: '생산량',
+      value: productionValue,
+      unit: '개',
+      targetProd: timeRange === 'daily' ? 2000 : (timeRange === 'weekly' ? 10000 : 50000),
+      chartData: { labels: prodChartLabels, datasets: [{ data: prodChartData }] },
+    },
+    { title: '가동률', value: operatingRate, chartData: { labels: opRateChartLabels, datasets: [{ data: opRateChartData }] } },
+    { title: '불량률', value: defectRate, chartData: { labels: defRateChartLabels, datasets: [{ data: defRateChartData }] } },
+  ];
 };
 
 // --- 차트 데이터 생성 로직 ---
@@ -221,110 +277,57 @@ export default {
       daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 10) + 1) },
       weekly: generateWeeklyData(false),
       monthly: generateMonthlyData(false),
-      selectedTimeRange: 'daily',
     };
-    initialChamferCheck.chartData = generateCheckChartData(initialChamferCheck, initialChamferCheck.selectedTimeRange, false);
+    initialChamferCheck.chartData = generateCheckChartData(initialChamferCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
 
     const initialOCRCheck = {
       daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 5) + 1) },
       weekly: generateWeeklyData(false),
       monthly: generateMonthlyData(false),
-      selectedTimeRange: 'daily',
     };
-    initialOCRCheck.chartData = generateCheckChartData(initialOCRCheck, initialOCRCheck.selectedTimeRange, false);
+    initialOCRCheck.chartData = generateCheckChartData(initialOCRCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
 
     const initialSurfaceCheck = {
       daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 15) + 1) },
       weekly: generateWeeklyData(false),
       monthly: generateMonthlyData(false),
-      selectedTimeRange: 'daily',
     };
-    initialSurfaceCheck.chartData = generateCheckChartData(initialSurfaceCheck, initialSurfaceCheck.selectedTimeRange, false);
-    const adminChartData = {
-      labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
-      datasets: [
-        { label: '장비 1 온도 (°C)', data: [65, 68, 72, 71, 75, 77], borderColor: '#8e44ad', fill: false },
-        { label: '장비 2 온도 (°C)', data: [62, 64, 65, 66, 68, 69], borderColor: '#2980b9', fill: false },
-      ],
-    }
+    initialSurfaceCheck.chartData = generateCheckChartData(initialSurfaceCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
 
     return {
       tabs: ['전체 현황', 'D02', 'D07', 'D14', 'D20'],
       currentTab: '전체 현황',
       userMode: 'general',
       isAuthenticated: false,
+      overallTimeRange: 'daily', // 전체 현황 탭을 위한 시간 범위
       dashboardData: {
         D02: {
-          cards: [
-            {
-              title: '오늘 생산량',
-              value: 1200,
-              unit: '개',
-              targetProd: 2000,
-              chartData: { labels: ['1시', '2시'], datasets: [{ data: [200, 180] }] },
-            },
-            { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
-            { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
-          ],
+          cards: generateCardData('daily'),
           defects: initialDefects.D02,
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
-          adminChartData
         },
         D07: {
-          cards: [
-            {
-              title: '오늘 생산량',
-              value: 1200,
-              unit: '개',
-              targetProd: 2000,
-              chartData: { labels: ['1시', '2시'], datasets: [{ data: [200, 180] }] },
-            },
-            { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
-            { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
-          ],
+          cards: generateCardData('daily'),
           defects: initialDefects.D07,
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
-          adminChartData
         },
         D14: {
-          cards: [
-            {
-              title: '오늘 생산량',
-              value: 1200,
-              unit: '개',
-              targetProd: 2000,
-              chartData: { labels: ['1시', '2시'], datasets: [{ data: [200, 180] }] },
-            },
-            { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
-            { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
-          ],
+          cards: generateCardData('daily'),
           defects: initialDefects.D14,
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
-          adminChartData
         },
         D20: {
-          cards: [
-            {
-              title: '오늘 생산량',
-              value: 1200,
-              unit: '개',
-              targetProd: 2000,
-              chartData: { labels: ['1시', '2시'], datasets: [{ data: [200, 180] }] },
-            },
-            { title: '가동률', value: '85%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [80, 82] }] } },
-            { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
-          ],
+          cards: generateCardData('daily'),
           defects: initialDefects.D20,
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
-          adminChartData
         },
       },
     }
@@ -335,11 +338,17 @@ export default {
       const productionData = [];
       const targetData = [];
 
-      labels.forEach(tab => {
-        const todayProductionCard = this.dashboardData[tab]?.cards.find(c => c.title === '오늘 생산량');
-        if (todayProductionCard) {
-          productionData.push(todayProductionCard.value);
-          targetData.push(todayProductionCard.targetProd);
+      labels.forEach(tabName => {
+        const tabData = this.dashboardData[tabName];
+        if (tabData && tabData.cards) {
+          const productionCard = tabData.cards.find(c => c.title === '생산량');
+          if (productionCard) {
+            productionData.push(productionCard.value);
+            targetData.push(productionCard.targetProd);
+          } else {
+            productionData.push(0);
+            targetData.push(0);
+          }
         } else {
           productionData.push(0);
           targetData.push(0);
@@ -350,7 +359,7 @@ export default {
         labels,
         datasets: [
           {
-            label: '오늘 생산량',
+            label: '생산량',
             backgroundColor: '#4caf50',
             data: productionData
           },
@@ -403,27 +412,58 @@ export default {
       }
     },
     handleTimeRangeChange(newRange) {
-      const currentDashboardData = this.dashboardData[this.currentTab];
-      if (currentDashboardData) {
-        // 불량 차트 업데이트
-        if (currentDashboardData.defects) {
-          currentDashboardData.defects.selectedTimeRange = newRange;
-          currentDashboardData.defects.chartData = generateCheckChartData(currentDashboardData.defects, newRange, true);
+      if (this.currentTab === '전체 현황') {
+        this.overallTimeRange = newRange;
+        // summaryChartData는 computed 속성이므로 overallTimeRange 변경 시 자동 업데이트됩니다.
+      } else {
+        const currentDashboardData = this.dashboardData[this.currentTab];
+        if (currentDashboardData) {
+          // 카드 데이터 업데이트
+          currentDashboardData.cards = generateCardData(newRange);
+
+          // 불량 차트 업데이트
+          if (currentDashboardData.defects) {
+            currentDashboardData.defects.selectedTimeRange = newRange;
+            currentDashboardData.defects.chartData = generateCheckChartData(currentDashboardData.defects, newRange, true);
+          }
+          // ChamferCheck 차트 업데이트
+          if (currentDashboardData.chamferCheck) {
+            currentDashboardData.chamferCheck.chartData = generateCheckChartData(currentDashboardData.chamferCheck, newRange, false);
+          }
+          // OCRCheck 차트 업데이트
+          if (currentDashboardData.ocrCheck) {
+            currentDashboardData.ocrCheck.chartData = generateCheckChartData(currentDashboardData.ocrCheck, newRange, false);
+          }
+          // SurfaceCheck 차트 업데이트
+          if (currentDashboardData.surfaceCheck) {
+            currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, newRange, false);
+          }
         }
-        // ChamferCheck 차트 업데이트
-        if (currentDashboardData.chamferCheck) {
-          currentDashboardData.chamferCheck.selectedTimeRange = newRange;
-          currentDashboardData.chamferCheck.chartData = generateCheckChartData(currentDashboardData.chamferCheck, newRange, false);
-        }
-        // OCRCheck 차트 업데이트
-        if (currentDashboardData.ocrCheck) {
-          currentDashboardData.ocrCheck.selectedTimeRange = newRange;
-          currentDashboardData.ocrCheck.chartData = generateCheckChartData(currentDashboardData.ocrCheck, newRange, false);
-        }
-        // SurfaceCheck 차트 업데이트
-        if (currentDashboardData.surfaceCheck) {
-          currentDashboardData.surfaceCheck.selectedTimeRange = newRange;
-          currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, newRange, false);
+      }
+    },
+  },
+  watch: {
+    currentTab(newTab) {
+      if (newTab !== '전체 현황') {
+        const currentDashboardData = this.dashboardData[newTab];
+        if (currentDashboardData) {
+          const timeRangeToApply = currentDashboardData.defects?.selectedTimeRange || 'daily';
+
+          // 모든 차트 데이터 업데이트
+          currentDashboardData.cards = generateCardData(timeRangeToApply);
+
+          if (currentDashboardData.defects) {
+            currentDashboardData.defects.chartData = generateCheckChartData(currentDashboardData.defects, timeRangeToApply, true);
+          }
+          if (currentDashboardData.chamferCheck) {
+            currentDashboardData.chamferCheck.chartData = generateCheckChartData(currentDashboardData.chamferCheck, timeRangeToApply, false);
+          }
+          if (currentDashboardData.ocrCheck) {
+            currentDashboardData.ocrCheck.chartData = generateCheckChartData(currentDashboardData.ocrCheck, timeRangeToApply, false);
+          }
+          if (currentDashboardData.surfaceCheck) {
+            currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, timeRangeToApply, false);
+          }
         }
       }
     },

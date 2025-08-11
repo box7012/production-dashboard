@@ -25,31 +25,26 @@
     </div>
 
     <div v-if="defectChartData" class="defect-chart-section">
-      <h3>결함 별 검출 수 ({{ selectedDefectType }})</h3>
+      <div class="chart-header">
+        <h3>결함 별 검출 수 ({{ selectedDefectType }})</h3>
+        <div class="defect-type-selector">
+          <label for="defect-select">불량 유형:</label>
+          <select id="defect-select" :value="selectedDefectType" @change="onDefectTypeChange">
+            <option v-for="dtype in defectTypes" :key="dtype" :value="dtype">
+              {{ dtype }}
+            </option>
+          </select>
+        </div>
+      </div>
       <div class="chart-wrapper">
         <Bar :data="defectChartData" :options="defectChartOptions" />
       </div>
-      <div class="defect-type-selector">
-        <label for="defect-select">불량 유형:</label>
-        <select id="defect-select" :value="selectedDefectType" @change="onDefectTypeChange">
-          <option v-for="dtype in defectTypes" :key="dtype" :value="dtype">
-            {{ dtype }}
-          </option>
-        </select>
-      </div>
     </div>
-
-    <AdminChart
-      v-if="userMode === 'admin' && adminChartData"
-      :chartData="adminChartData"
-      title="장비 온도 모니터링"
-    />
   </div>
 </template>
 
 <script>
 import ProductionStatusCard from './ProductionStatusCard.vue'
-import AdminChart from './AdminChart.vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -65,7 +60,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default {
   name: 'ProductionDashboard',
-  components: { ProductionStatusCard, AdminChart, Bar },
+  components: { ProductionStatusCard, Bar },
   props: {
     title: String,
     cards: Array,
@@ -156,28 +151,31 @@ export default {
   background-color: #fff;
   border-radius: 8px;
   margin-top: 20px; /* 상단 여백 추가 */
+  margin-bottom: 20px;
+  /* display: flex; Flexbox 컨테이너로 설정 */
+  /* justify-content: space-between; 자식 요소들을 양 끝으로 정렬 */
+  /* align-items: flex-start; 자식 요소들을 상단에 정렬 */
+  /* gap: 20px; 자식 요소들 사이의 간격 */
+}
+
+.chart-header {
+  display: flex; /* 제목과 드롭다운을 같은 줄에 배치 */
+  justify-content: space-between; /* 제목과 드롭다운을 양 끝으로 정렬 */
+  align-items: center; /* 세로 중앙 정렬 */
+  margin-bottom: 15px; /* 헤더와 차트 사이 간격 */
 }
 
 .chart-wrapper {
   position: relative;
   height: 300px; /* 차트 높이 조절 */
-  margin-bottom: 20px;
+  margin-bottom: 0; /* Flexbox 사용 시 불필요한 마진 제거 */
 }
 
 .defect-type-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 15px;
+  /* 기존 스타일 유지 */
+  padding-top: 0; /* Flexbox로 정렬되므로 필요 없음 */
+  flex-shrink: 0; /* 축소되지 않도록 설정 */
+  width: 150px; /* 고정 너비 설정 */
 }
 
-.defect-type-selector label {
-  font-weight: bold;
-}
-
-.defect-type-selector select {
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
 </style>
