@@ -1,91 +1,80 @@
+
 <template>
-  <div class="defect-check-container">
-    <div class="defect-selector">
-      <label v-for="defectType in defects.defectTypes" :key="defectType">
-        <input
-          type="radio"
-          name="defectType"
-          :value="defectType"
-          :checked="defectType === defects.selectedDefect"
-          @change="onDefectTypeChange(defectType)"
-        />
-        {{ defectType }}
-      </label>
-    </div>
-    <div class="chart-container">
-      <BarChart v-if="defects.chartData" :data="defects.chartData" :options="chartOptions" />
+  <div class="defect-controls">
+    <div class="control-group">
+      <label>시간 범위:</label>
+      <button
+        v-for="range in ranges"
+        :key="range.value"
+        :class="{ active: currentRange === range.value }"
+        @click="selectRange(range.value)"
+      >
+        {{ range.text }}
+      </button>
     </div>
   </div>
 </template>
 
 <script>
-import { Bar } from 'vue-chartjs'
-import {
-  Chart,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-} from 'chart.js'
-
-Chart.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
-
 export default {
   name: 'DefectCheck',
-  components: {
-    BarChart: Bar,
-  },
   props: {
-    defects: {
-      type: Object,
-      required: true,
-    },
+    currentRange: {
+      type: String,
+      required: true
+    }
   },
-  emits: ['update:defectType'],
+  emits: ['update:timeRange'],
   data() {
     return {
-      chartOptions: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      },
+      ranges: [
+        { value: 'daily', text: 'Daily' },
+        { value: 'weekly', text: 'Weekly' },
+        { value: 'monthly', text: 'Monthly' }
+      ]
     }
   },
   methods: {
-    onDefectTypeChange(newDefectType) {
-      this.$emit('update:defectType', newDefectType)
-    },
-  },
+    selectRange(range) {
+      this.$emit('update:timeRange', range);
+    }
+  }
 }
 </script>
 
 <style scoped>
-.defect-check-container {
-  padding: 20px;
-}
-.defect-selector {
-  margin-bottom: 20px;
+.defect-controls {
   display: flex;
-  gap: 20px;
-  justify-content: center;
+  gap: 30px;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  align-items: center;
 }
-.defect-selector label {
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+label {
+  font-weight: bold;
+}
+button {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
   cursor: pointer;
+  border-radius: 4px;
 }
-.chart-container {
-  position: relative;
-  height: 300px;
-  width: 100%;
+button.active {
+  background-color: #34495e;
+  color: white;
+  border-color: #34495e;
+}
+select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
 </style>

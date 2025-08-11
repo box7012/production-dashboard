@@ -20,16 +20,25 @@
 
       <section class="content">
         <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
-        <Dashboard
-          v-else-if="dashboardData[currentTab]"
-          :title="currentTab"
-          :cards="dashboardData[currentTab].cards"
-          :defects="dashboardData[currentTab].defects"
-          :adminChartData="dashboardData[currentTab].adminChartData"
-          :userMode="userMode"
-          @update:targetProd="handleUpdateTargetProd"
-          @update:defectType="handleDefectChange"
-        />
+        <div v-else>
+          <DefectCheck 
+            v-if="dashboardData[currentTab] && dashboardData[currentTab].defects"
+            :current-range="defectTimeRange"
+            @update:timeRange="handleTimeRangeChange"
+          />
+          <Dashboard
+            v-if="dashboardData[currentTab]"
+            :title="currentTab"
+            :cards="dashboardData[currentTab].cards"
+            :defectChartData="dashboardData[currentTab].defects.chartData" 
+            :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
+            :defectTypes="dashboardData[currentTab].defects.defectTypes" 
+            :adminChartData="dashboardData[currentTab].adminChartData"
+            :userMode="userMode"
+            @update:targetProd="handleUpdateTargetProd"
+            @update:defectType="handleDefectChange"
+          />
+        </div>
         <FileDownloadTable v-if="userMode === 'admin'" />
       </section>
     </div>
@@ -41,53 +50,102 @@ import Dashboard from './components/Dashboard.vue';
 import FileDownloadTable from './components/FileDownloadTable.vue';
 import LoginView from './components/Login.vue' // The file is Login.vue, but component name is LoginView
 import ProductionSummary from './components/ProductionSummary.vue'
+import DefectCheck from './components/DefectCheck.vue'
+
 import { login as apiLogin } from './services/auth.js'
 
-const generateDefectChartData = (defects) => {
-  if (!defects) return null
-  const { selectedDefect, byLine, labels, totalByHour } = defects
-  const defectData = byLine[selectedDefect]
-  const normalData = labels.map((_, idx) => {
-    const total = totalByHour?.[idx] ?? 0
-    return Math.max(total - (defectData[idx] || 0), 0)
-  })
+// --- 샘플 데이터 생성 로직 ---
+const generateWeeklyData = () => {
+  const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+
+  const data = {};
+  defectTypes.forEach(type => {
+    data[type] = labels.map(() => Math.floor(Math.random() * 50) + 5); // 5~54 사이 불량 개수
+  });
+
+  return { labels, data };
+};
+
+// 월간 데이터 생성 (작년 동월부터 이번 달까지)
+const generateMonthlyData = () => {
+  const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}일`);
+  const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+
+  const data = {};
+  defectTypes.forEach(type => {
+    data[type] = labels.map(() => Math.floor(Math.random() * 200) + 10); // 10~209 사이 불량 개수
+  });
+
+  return { labels, data };
+};
+
+// --- 차트 데이터 생성 로직 ---
+const generateDefectChartData = (defects, timeRange) => {
+  if (!defects) return null;
+
+  let labels, defectData, totalData;
+  const { selectedDefect } = defects;
+
+  switch (timeRange) {
+    case 'weekly':
+      labels = defects.weekly.labels;
+      defectData = defects.weekly.data[selectedDefect];
+      // 주간 총 생산량은 별도 데이터가 없으므로 불량률 계산은 생략합니다.
+      totalData = defectData.map(d => d + Math.floor(Math.random() * 500 + 200)); // 임의의 총생산량
+      break;
+
+    case 'monthly':
+      labels = defects.monthly.labels;
+      defectData = defects.monthly.data[selectedDefect];
+      // 월간 총 생산량은 별도 데이터가 없으므로 불량률 계산은 생략합니다.
+      totalData = defectData.map(d => d + Math.floor(Math.random() * 5000 + 2000)); // 임의의 총생산량
+      break;
+
+    default: // daily
+      labels = defects.daily.labels;
+      defectData = defects.daily.byLine[selectedDefect];
+      totalData = defects.daily.totalByHour;
+      break;
+  }
+
+  const normalData = totalData.map((total, idx) => Math.max(total - (defectData[idx] || 0), 0));
 
   return {
     labels,
     datasets: [
-      {
-        label: '정상',
-        data: normalData,
-        backgroundColor: '#4caf50',
-      },
-      {
-        label: selectedDefect,
-        data: byLine[selectedDefect],
-        backgroundColor: '#f87979',
-      },
+      { label: '정상', data: normalData, backgroundColor: '#4caf50' },
+      { label: selectedDefect, data: defectData, backgroundColor: '#f87979' },
     ],
-  }
-}
+  };
+};
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck },
   data() {
+    const weeklyData = generateWeeklyData();
+    const monthlyData = generateMonthlyData();
+
     const baseDefectData = {
       defectTypes: ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'],
-      labels: [
-        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
-      ],
-      byLine: {
-        honing: [5, 8, 3, 6, 4, 2, 7, 5, 6, 3, 8, 5],
-        bubble: [2, 4, 5, 1, 3, 6, 2, 4, 5, 1, 3, 2],
-        dent: [6, 2, 1, 3, 5, 4, 6, 7, 8, 2, 1, 3],
-        honing_missing: [1, 0, 2, 2, 1, 3, 0, 1, 2, 0, 1, 0],
-        crack: [6, 2, 1, 3, 2, 1, 4, 5, 3, 2, 1, 4],
-        burst: [2, 4, 5, 1, 3, 2, 4, 3, 2, 1, 2, 3],
+      daily: {
+        labels: [
+          '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+          '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+        ],
+        byLine: {
+          honing: [5, 8, 3, 6, 4, 2, 7, 5, 6, 3, 8, 5, 5, 8, 3, 6, 4, 2, 7, 5, 6, 3, 8, 5],
+          bubble: [2, 4, 5, 1, 3, 6, 2, 4, 5, 1, 3, 2, 2, 4, 5, 1, 3, 6, 2, 4, 5, 1, 3, 2],
+          dent: [6, 2, 1, 3, 5, 4, 6, 7, 8, 2, 1, 3, 6, 2, 1, 3, 5, 4, 6, 7, 8, 2, 1, 3],
+          honing_missing: [1, 0, 2, 2, 1, 3, 0, 1, 2, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 1, 2, 0, 1, 0],
+          crack: [6, 2, 1, 3, 2, 1, 4, 5, 3, 2, 1, 4, 6, 2, 1, 3, 2, 1, 4, 5, 3, 2, 1, 4],
+          burst: [2, 4, 5, 1, 3, 2, 4, 3, 2, 1, 2, 3, 2, 4, 5, 1, 3, 2, 4, 3, 2, 1, 2, 3],
+        },
+        totalByHour: [50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50, 50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50]
       },
-      totalByHour: [50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50]
+      weekly: weeklyData,
+      monthly: monthlyData
     }
     const initialDefects = {
       D02: { ...baseDefectData, selectedDefect: 'honing' },
@@ -96,7 +154,7 @@ export default {
       D20: { ...baseDefectData, selectedDefect: 'honing' },
     }
     Object.values(initialDefects).forEach(defects => {
-      defects.chartData = generateDefectChartData(defects)
+      defects.chartData = generateDefectChartData(defects, 'daily') // 초기 로딩은 daily
     })
     const adminChartData = {
       labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
@@ -111,6 +169,7 @@ export default {
       currentTab: '전체 현황',
       userMode: 'general',
       isAuthenticated: false,
+      defectTimeRange: 'daily', // 시간 범위 상태 추가
       dashboardData: {
         D02: {
           cards: [
@@ -245,7 +304,14 @@ export default {
       const defects = this.dashboardData[this.currentTab]?.defects
       if (defects) {
         defects.selectedDefect = newDefectType
-        defects.chartData = generateDefectChartData(defects)
+        defects.chartData = generateDefectChartData(defects, this.defectTimeRange)
+      }
+    },
+    handleTimeRangeChange(newRange) {
+      this.defectTimeRange = newRange;
+      const defects = this.dashboardData[this.currentTab]?.defects;
+      if (defects) {
+        defects.chartData = generateDefectChartData(defects, this.defectTimeRange);
       }
     },
   },
