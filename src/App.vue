@@ -23,8 +23,20 @@
         <div v-else>
           <DefectCheck 
             v-if="dashboardData[currentTab] && dashboardData[currentTab].defects"
-            :current-range="defectTimeRange"
+            :current-range="dashboardData[currentTab].defects.selectedTimeRange"
             @update:timeRange="handleTimeRangeChange"
+          />
+          <ChamferCheck 
+            v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
+            :chartData="dashboardData[currentTab].chamferCheck.chartData"
+          />
+          <OCRCheck 
+            v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
+            :chartData="dashboardData[currentTab].ocrCheck.chartData"
+          />
+          <SurfaceCheck 
+            v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
+            :chartData="dashboardData[currentTab].surfaceCheck.chartData"
           />
           <Dashboard
             v-if="dashboardData[currentTab]"
@@ -51,81 +63,128 @@ import FileDownloadTable from './components/FileDownloadTable.vue';
 import LoginView from './components/Login.vue' // The file is Login.vue, but component name is LoginView
 import ProductionSummary from './components/ProductionSummary.vue'
 import DefectCheck from './components/DefectCheck.vue'
+import ChamferCheck from './components/ChamferCheck.vue'
+import OCRCheck from './components/OCRCheck.vue'
+import SurfaceCheck from './components/SurfaceCheck.vue'
 
 import { login as apiLogin } from './services/auth.js'
 
 // --- 샘플 데이터 생성 로직 ---
-const generateWeeklyData = () => {
-  const labels = ['월', '화', '수', '목', '금', '토', '일'];
-  const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+const generateWeeklyData = (isDefect = false) => {
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    labels.push(`${d.getMonth() + 1}-${d.getDate()}`);
+  }
 
-  const data = {};
-  defectTypes.forEach(type => {
-    data[type] = labels.map(() => Math.floor(Math.random() * 50) + 5); // 5~54 사이 불량 개수
-  });
-
-  return { labels, data };
+  if (isDefect) {
+    const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+    const data = {};
+    defectTypes.forEach(type => {
+      data[type] = Array.from({ length: 7 }, () => Math.floor(Math.random() * 20));
+    });
+    return { labels, data };
+  } else {
+    // 일반 체크 항목 (OK/NG)
+    const okCount = Array.from({ length: 7 }, () => Math.floor(Math.random() * 1000) + 500);
+    const ngCount = Array.from({ length: 7 }, () => Math.floor(Math.random() * 50) + 5);
+    return { labels, okCount, ngCount };
+  }
 };
 
 // 월간 데이터 생성 (작년 동월부터 이번 달까지)
-const generateMonthlyData = () => {
-  const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}일`);
-  const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+const generateMonthlyData = (isDefect = false) => {
+  const labels = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    labels.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
 
-  const data = {};
-  defectTypes.forEach(type => {
-    data[type] = labels.map(() => Math.floor(Math.random() * 200) + 10); // 10~209 사이 불량 개수
-  });
-
-  return { labels, data };
+  if (isDefect) {
+    const defectTypes = ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'];
+    const data = {};
+    defectTypes.forEach(type => {
+      data[type] = Array.from({ length: 12 }, () => Math.floor(Math.random() * 200));
+    });
+    return { labels, data };
+  } else {
+    // 일반 체크 항목 (OK/NG)
+    const okCount = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10000) + 5000);
+    const ngCount = Array.from({ length: 12 }, () => Math.floor(Math.random() * 500) + 50);
+    return { labels, okCount, ngCount };
+  }
 };
 
 // --- 차트 데이터 생성 로직 ---
-const generateDefectChartData = (defects, timeRange) => {
-  if (!defects) return null;
+const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => {
+  if (!checkData) return null;
 
-  let labels, defectData, totalData;
-  const { selectedDefect } = defects;
+  let labels, okData, ngData, defectData, totalData;
 
-  switch (timeRange) {
-    case 'weekly':
-      labels = defects.weekly.labels;
-      defectData = defects.weekly.data[selectedDefect];
-      // 주간 총 생산량은 별도 데이터가 없으므로 불량률 계산은 생략합니다.
-      totalData = defectData.map(d => d + Math.floor(Math.random() * 500 + 200)); // 임의의 총생산량
-      break;
-
-    case 'monthly':
-      labels = defects.monthly.labels;
-      defectData = defects.monthly.data[selectedDefect];
-      // 월간 총 생산량은 별도 데이터가 없으므로 불량률 계산은 생략합니다.
-      totalData = defectData.map(d => d + Math.floor(Math.random() * 5000 + 2000)); // 임의의 총생산량
-      break;
-
-    default: // daily
-      labels = defects.daily.labels;
-      defectData = defects.daily.byLine[selectedDefect];
-      totalData = defects.daily.totalByHour;
-      break;
+  if (isDefectChart) {
+    const { selectedDefect } = checkData;
+    switch (timeRange) {
+      case 'weekly':
+        labels = checkData.weekly.labels;
+        defectData = checkData.weekly.data[selectedDefect];
+        totalData = defectData.map(d => d + Math.floor(Math.random() * 500 + 200));
+        break;
+      case 'monthly':
+        labels = checkData.monthly.labels;
+        defectData = checkData.monthly.data[selectedDefect];
+        totalData = defectData.map(d => d + Math.floor(Math.random() * 5000 + 2000));
+        break;
+      default: // daily
+        labels = checkData.daily.labels;
+        defectData = checkData.daily.byLine[selectedDefect];
+        totalData = checkData.daily.totalByHour;
+        break;
+    }
+    const normalData = totalData.map((total, idx) => Math.max(total - (defectData[idx] || 0), 0));
+    return {
+      labels,
+      datasets: [
+        { label: '정상', data: normalData, backgroundColor: '#4caf50' },
+        { label: selectedDefect, data: defectData, backgroundColor: '#f87979' },
+      ],
+    };
+  } else {
+    // 일반 체크 항목 (OK/NG)
+    switch (timeRange) {
+      case 'weekly':
+        labels = checkData.weekly.labels;
+        okData = checkData.weekly.okCount;
+        ngData = checkData.weekly.ngCount;
+        break;
+      case 'monthly':
+        labels = checkData.monthly.labels;
+        okData = checkData.monthly.okCount;
+        ngData = checkData.monthly.ngCount;
+        break;
+      default: // daily
+        labels = checkData.daily.labels;
+        okData = checkData.daily.okCount;
+        ngData = checkData.daily.ngCount;
+        break;
+    }
+    return {
+      labels,
+      datasets: [
+        { label: 'OK', data: okData, backgroundColor: '#4caf50' },
+        { label: 'NG', data: ngData, backgroundColor: '#f87979' },
+      ],
+    };
   }
-
-  const normalData = totalData.map((total, idx) => Math.max(total - (defectData[idx] || 0), 0));
-
-  return {
-    labels,
-    datasets: [
-      { label: '정상', data: normalData, backgroundColor: '#4caf50' },
-      { label: selectedDefect, data: defectData, backgroundColor: '#f87979' },
-    ],
-  };
 };
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck },
   data() {
-    const weeklyData = generateWeeklyData();
-    const monthlyData = generateMonthlyData();
+    const weeklyDataForDefects = generateWeeklyData(true);
+    const monthlyDataForDefects = generateMonthlyData(true);
 
     const baseDefectData = {
       defectTypes: ['honing', 'bubble', 'dent', 'honing_missing', 'crack', 'burst'],
@@ -144,18 +203,43 @@ export default {
         },
         totalByHour: [50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50, 50, 60, 45, 55, 40, 38, 42, 50, 55, 60, 48, 50]
       },
-      weekly: weeklyData,
-      monthly: monthlyData
+      weekly: weeklyDataForDefects,
+      monthly: monthlyDataForDefects
     }
     const initialDefects = {
-      D02: { ...baseDefectData, selectedDefect: 'honing' },
-      D07: { ...baseDefectData, selectedDefect: 'honing' },
-      D14: { ...baseDefectData, selectedDefect: 'honing' },
-      D20: { ...baseDefectData, selectedDefect: 'honing' },
+      D02: { ...baseDefectData, selectedDefect: 'honing', selectedTimeRange: 'daily' },
+      D07: { ...baseDefectData, selectedDefect: 'honing', selectedTimeRange: 'daily' },
+      D14: { ...baseDefectData, selectedDefect: 'honing', selectedTimeRange: 'daily' },
+      D20: { ...baseDefectData, selectedDefect: 'honing', selectedTimeRange: 'daily' },
     }
     Object.values(initialDefects).forEach(defects => {
-      defects.chartData = generateDefectChartData(defects, 'daily') // 초기 로딩은 daily
+      defects.chartData = generateCheckChartData(defects, defects.selectedTimeRange, true) // 초기 로딩은 daily
     })
+
+    // 새로운 체크 항목 데이터
+    const initialChamferCheck = {
+      daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 10) + 1) },
+      weekly: generateWeeklyData(false),
+      monthly: generateMonthlyData(false),
+      selectedTimeRange: 'daily',
+    };
+    initialChamferCheck.chartData = generateCheckChartData(initialChamferCheck, initialChamferCheck.selectedTimeRange, false);
+
+    const initialOCRCheck = {
+      daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 5) + 1) },
+      weekly: generateWeeklyData(false),
+      monthly: generateMonthlyData(false),
+      selectedTimeRange: 'daily',
+    };
+    initialOCRCheck.chartData = generateCheckChartData(initialOCRCheck, initialOCRCheck.selectedTimeRange, false);
+
+    const initialSurfaceCheck = {
+      daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 15) + 1) },
+      weekly: generateWeeklyData(false),
+      monthly: generateMonthlyData(false),
+      selectedTimeRange: 'daily',
+    };
+    initialSurfaceCheck.chartData = generateCheckChartData(initialSurfaceCheck, initialSurfaceCheck.selectedTimeRange, false);
     const adminChartData = {
       labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
       datasets: [
@@ -169,7 +253,6 @@ export default {
       currentTab: '전체 현황',
       userMode: 'general',
       isAuthenticated: false,
-      defectTimeRange: 'daily', // 시간 범위 상태 추가
       dashboardData: {
         D02: {
           cards: [
@@ -184,6 +267,9 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D02,
+          chamferCheck: initialChamferCheck,
+          ocrCheck: initialOCRCheck,
+          surfaceCheck: initialSurfaceCheck,
           adminChartData
         },
         D07: {
@@ -199,6 +285,9 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D07,
+          chamferCheck: initialChamferCheck,
+          ocrCheck: initialOCRCheck,
+          surfaceCheck: initialSurfaceCheck,
           adminChartData
         },
         D14: {
@@ -214,6 +303,9 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D14,
+          chamferCheck: initialChamferCheck,
+          ocrCheck: initialOCRCheck,
+          surfaceCheck: initialSurfaceCheck,
           adminChartData
         },
         D20: {
@@ -229,6 +321,9 @@ export default {
             { title: '불량률', value: '1.8%', chartData: { labels: ['1시', '2시'], datasets: [{ data: [2.1, 1.9] }] } },
           ],
           defects: initialDefects.D20,
+          chamferCheck: initialChamferCheck,
+          ocrCheck: initialOCRCheck,
+          surfaceCheck: initialSurfaceCheck,
           adminChartData
         },
       },
@@ -304,14 +399,32 @@ export default {
       const defects = this.dashboardData[this.currentTab]?.defects
       if (defects) {
         defects.selectedDefect = newDefectType
-        defects.chartData = generateDefectChartData(defects, this.defectTimeRange)
+        defects.chartData = generateCheckChartData(defects, defects.selectedTimeRange, true)
       }
     },
     handleTimeRangeChange(newRange) {
-      this.defectTimeRange = newRange;
-      const defects = this.dashboardData[this.currentTab]?.defects;
-      if (defects) {
-        defects.chartData = generateDefectChartData(defects, this.defectTimeRange);
+      const currentDashboardData = this.dashboardData[this.currentTab];
+      if (currentDashboardData) {
+        // 불량 차트 업데이트
+        if (currentDashboardData.defects) {
+          currentDashboardData.defects.selectedTimeRange = newRange;
+          currentDashboardData.defects.chartData = generateCheckChartData(currentDashboardData.defects, newRange, true);
+        }
+        // ChamferCheck 차트 업데이트
+        if (currentDashboardData.chamferCheck) {
+          currentDashboardData.chamferCheck.selectedTimeRange = newRange;
+          currentDashboardData.chamferCheck.chartData = generateCheckChartData(currentDashboardData.chamferCheck, newRange, false);
+        }
+        // OCRCheck 차트 업데이트
+        if (currentDashboardData.ocrCheck) {
+          currentDashboardData.ocrCheck.selectedTimeRange = newRange;
+          currentDashboardData.ocrCheck.chartData = generateCheckChartData(currentDashboardData.ocrCheck, newRange, false);
+        }
+        // SurfaceCheck 차트 업데이트
+        if (currentDashboardData.surfaceCheck) {
+          currentDashboardData.surfaceCheck.selectedTimeRange = newRange;
+          currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, newRange, false);
+        }
       }
     },
   },
