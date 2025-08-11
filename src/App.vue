@@ -19,38 +19,61 @@
       </aside>
 
       <section class="content">
-        <DefectCheck 
-          :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
-          @update:timeRange="handleTimeRangeChange"
-        />
-        <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
-        <div v-else>
-          <Dashboard
-            v-if="dashboardData[currentTab]"
-            :title="currentTab"
-            :cards="dashboardData[currentTab].cards"
-            :defectChartData="dashboardData[currentTab].defects.chartData" 
-            :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
-            :defectTypes="dashboardData[currentTab].defects.defectTypes" 
-            :adminChartData="dashboardData[currentTab].adminChartData"
-            :userMode="userMode"
-            @update:targetProd="handleUpdateTargetProd"
-            @update:defectType="handleDefectChange"
-          />
-          <ChamferCheck 
-            v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
-            :chartData="dashboardData[currentTab].chamferCheck.chartData"
-          />
-          <OCRCheck 
-            v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
-            :chartData="dashboardData[currentTab].ocrCheck.chartData"
-          />
-          <SurfaceCheck 
-            v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
-            :chartData="dashboardData[currentTab].surfaceCheck.chartData"
-          />
+        <div v-if="userMode !== 'admin'" class="work-mode-selection" style="margin-bottom: 16px;">
+          <label>작업 모드 선택 : </label>
+          <button
+            :class="{ active: workMode === 'production_manager' }"
+            @click="setWorkMode('production_manager')"
+          >
+            생산 관리
+          </button>
+          <button
+            :class="{ active: workMode === 'worker' }"
+            @click="setWorkMode('worker')"
+          >
+            작업자
+          </button>
         </div>
-        <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
+          <template v-if="workMode === 'production_manager'">
+            <DefectCheck 
+              :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
+              @update:timeRange="handleTimeRangeChange"
+            />
+            <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
+            <div v-else>
+              <Dashboard
+                v-if="dashboardData[currentTab]"
+                :title="currentTab"
+                :cards="dashboardData[currentTab].cards"
+                :defectChartData="dashboardData[currentTab].defects.chartData" 
+                :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
+                :defectTypes="dashboardData[currentTab].defects.defectTypes" 
+                :adminChartData="dashboardData[currentTab].adminChartData"
+                :userMode="userMode"
+                @update:targetProd="handleUpdateTargetProd"
+                @update:defectType="handleDefectChange"
+              />
+              <ChamferCheck 
+                v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
+                :chartData="dashboardData[currentTab].chamferCheck.chartData"
+              />
+              <OCRCheck 
+                v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
+                :chartData="dashboardData[currentTab].ocrCheck.chartData"
+              />
+              <SurfaceCheck 
+                v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
+                :chartData="dashboardData[currentTab].surfaceCheck.chartData"
+              />
+            </div>
+            <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
+          </template>
+          <template v-else-if="workMode === 'worker'">
+            <WorkerImageViewerVue 
+              :key="workMode"
+              :tab="currentTab" 
+            />
+          </template>
       </section>
     </div>
   </div>
@@ -65,8 +88,8 @@ import DefectCheck from './components/DefectCheck.vue'
 import ChamferCheck from './components/ChamferCheck.vue'
 import OCRCheck from './components/OCRCheck.vue'
 import SurfaceCheck from './components/SurfaceCheck.vue'
-
 import { login as apiLogin } from './services/auth.js'
+import WorkerImageViewerVue from './components/WorkerImageViewer.vue';
 
 // --- 샘플 데이터 생성 로직 ---
 const generateWeeklyData = (isDefect = false) => {
@@ -237,7 +260,7 @@ const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => 
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue },
   data() {
     const weeklyDataForDefects = generateWeeklyData(true);
     const monthlyDataForDefects = generateMonthlyData(true);
@@ -329,6 +352,7 @@ export default {
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
         },
+        workMode: 'production_manager', 
       },
     }
   },
@@ -439,6 +463,10 @@ export default {
         }
       }
     },
+    setWorkMode(mode) {
+      this.workMode = mode;
+      console.log("changed")
+    }
   },
   watch: {
     currentTab(newTab) {

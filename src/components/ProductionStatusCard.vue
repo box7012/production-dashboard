@@ -7,9 +7,9 @@
       <span>달성률: {{ achievementRate }}%</span>
     </div>
 
-    <div v-if="isProductionCard && userMode === 'admin'" class="target-input">
+    <div v-if="isProductionCard" class="target-input">
       <label>목표:</label>
-      <input type="number" :value="targetProd" @input="onTargetChange" />
+      <input type="number" :value="targetProd" @input="onTargetChange" :readonly="userMode !== 'admin'" />
     </div>
 
     <div class="chart-container">
@@ -45,6 +45,7 @@ export default {
     chartData: Object,
     targetProd: Number,
     userMode: String,
+    workMode: String, // workMode prop 추가
   },
   emits: ['update:targetProd'],
   data() {
@@ -74,7 +75,10 @@ export default {
   },
   methods: {
     onTargetChange(event) {
-      this.$emit('update:targetProd', event.target.value)
+      // 관리자만 값을 변경할 수 있도록 조건 추가
+      if (this.userMode === 'admin') {
+        this.$emit('update:targetProd', event.target.value)
+      }
     },
   },
 }
@@ -116,6 +120,10 @@ export default {
   padding: 2px 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+.target-input input[readonly] {
+  background-color: #e9e9e9;
+  cursor: not-allowed;
 }
 .chart-container {
   position: relative;
