@@ -2,75 +2,129 @@
   <div class="image-viewer-container">
     <h3>{{ tab }} 이미지 뷰어</h3>
 
+    <!-- 크게 보여지는 이미지 영역 -->
+    <div v-if="selectedImage" class="large-image-wrapper">
+      <img :src="getImageUrl(selectedImage)" :alt="selectedImage" />
+      <div class="caption">{{ selectedImage }}</div>
+      <button class="close-btn" @click="selectedImage = null">닫기 ✕</button>
+    </div>
+
+    <!-- 로딩 / 에러 메시지 -->
     <div v-if="loading" class="loading-message">이미지 로딩 중...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else-if="images.length === 0" class="no-images-message">표시할 이미지가 없습니다.</div>
 
-    <div v-else class="image-grid">
-      <div
-        v-for="image in images"
-        :key="image"
-        class="image-item"
-        @click="openModal(image)"
-        style="cursor: pointer;"
-      >
-        <img :src="getImageUrl(image)" :alt="image" />
-        <p>{{ image }}</p>
-      </div>
+    <!-- 버튼 그룹은 항상 보여주기 -->
+    <div class="button-group">
+      <button v-for="tag in tags" :key="tag" @click="addTagToAllImages(tag)">
+        {{ tag }}
+      </button>
+      <button @click="removeTagFromAllImages">태그 제거</button>
     </div>
-    <WorkerImageLabelCheckVue/>
-    <!-- 모달 -->
-    <div v-if="selectedImage" class="modal" @click.self="closeModal">
-      <span class="close-button" @click="closeModal">&times;</span>
-      <img class="modal-content" :src="getImageUrl(selectedImage)" :alt="selectedImage" />
-      <div class="caption">{{ selectedImage }}</div>
-    </div>
+
+    <!-- 이미지 목록 테이블: 로딩이나 에러 없을 때만 -->
+    <table v-if="!loading && !error" class="image-table">
+      <thead>
+        <tr>
+          <th>이미지 경로</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="image in images"
+          :key="image"
+          class="clickable-row"
+          @click="openModal(image)"
+        >
+          <td>{{ image }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script>
-
-import WorkerImageLabelCheckVue from './WorkerImageLabelCheck.vue';
-
 export default {
-  name: 'WorkerImageViewer',
-  components: { WorkerImageLabelCheckVue },
+  name: 'WorkerImageViewerVue',
   props: {
     tab: {
       type: String,
       required: true,
-    },
+    }
   },
   data() {
     return {
+      tags: ['(ngr)', '(nog_foreign)', '(nog_flaw)', '(nog_dust)', '(nog_chip)', '(nog_water)', '(noh)'],
       images: [],
       loading: false,
       error: null,
-      selectedImage: null, // 클릭한 이미지 저장
+      selectedImage: null,
       backendUrl: 'http://192.168.0.95:8081',
-    };
+    }
   },
   watch: {
     tab: {
       immediate: true,
-      handler: 'fetchImages',
-    },
+      handler() {
+        this.fetchImages()
+      }
+    }
   },
   methods: {
+
+    async addTagToAllImages(tag) {
+      try {
+        const response = await fetch(`${this.backendUrl}/api/images/${this.tab}/prepend-tag`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to prepend tag');
+        }
+
+        alert(`모든 이미지에 "${tag}" 태그가 붙었습니다.`);
+        // 필요하면 이미지 목록 다시 불러오기
+        this.fetchImages();
+
+      } catch (error) {
+        console.error(error);
+        alert('태그 저장 중 오류가 발생했습니다.');
+      }
+    },
+
+    async removeTagFromAllImages() {
+      try {
+        const response = await fetch(`${this.backendUrl}/api/images/${this.tab}/remove-tag`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to  remove tags');
+        }
+
+        alert('모든 이미지의 tag가 제거 되었습니다!');
+        this.fetchImages();
+      } catch (error) {
+        console.error(error);
+        alert('태그 제거 중 오류가 발생했습니다.');
+      }
+    },
+
     async fetchImages() {
       this.loading = true;
       this.error = null;
       this.images = [];
+      this.selectedImage = null;
       try {
-        const response = await fetch(`${this.backendUrl}/api/images/${this.tab}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        this.images = data;
+        const res = await fetch(`${this.backendUrl}/api/images/${this.tab}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        this.images = data;  // images가 ["img1.jpg", "img2.jpg", ...] 형태여야 합니다.
       } catch (e) {
-        console.error("Failed to fetch images:", e);
-        this.error = '이미지를 불러오는 데 실패했습니다. 백엔드 서버와 이미지 경로를 확인하세요.';
+        this.error = "이미지를 불러오는 데 실패했습니다.";
+        console.error(e);
       } finally {
         this.loading = false;
       }
@@ -80,99 +134,106 @@ export default {
     },
     openModal(image) {
       this.selectedImage = image;
-    },
-    closeModal() {
-      this.selectedImage = null;
-    },
-  },
-};
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // 선택 시 페이지 위로 스크롤
+    }
+  }
+}
 </script>
 
-
 <style scoped>
-
-/* 모달 스타일 추가 */
-.modal {
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  max-width: 90%;
-  max-height: 80vh;
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
-}
-
-.close-button {
-  position: fixed;
-  top: 20px;
-  right: 40px;
-  color: white;
-  font-size: 40px;
-  font-weight: bold;
-  cursor: pointer;
-  user-select: none;
-}
-
-.caption {
-  margin-top: 10px;
-  color: white;
-  text-align: center;
-  font-size: 1em;
-}
 .image-viewer-container {
   padding: 20px;
-  background-color: #fff;
+  background: white;
   border-radius: 8px;
-  margin-top: 20px;
-  min-width: 800px;
+  min-width: 1000px;
 }
-h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #333;
-}
+
 .loading-message,
-.error-message,
-.no-images-message {
+.error-message {
   text-align: center;
   padding: 20px;
   color: #666;
 }
+
 .error-message {
   color: red;
 }
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
+
+.image-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
 }
-.image-item {
-  border: 1px solid #eee;
-  border-radius: 5px;
-  padding: 10px;
+
+.image-table th,
+.image-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.image-table th {
+  background-color: #f4f4f4;
+  text-align: left;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background-color: #efefef;
+}
+
+.large-image-wrapper {
   text-align: center;
-  background-color: #f9f9f9;
+  margin-bottom: 20px;
+  position: relative;
 }
-.image-item img {
-  max-width: 100%;
+
+.large-image-wrapper img {
+  width: 1000px;
   height: auto;
-  border-radius: 3px;
-  margin-bottom: 5px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  max-width: 100%;
 }
-.image-item p {
-  font-size: 0.8em;
+
+.caption {
+  margin-top: 8px;
+  font-size: 0.9em;
   color: #555;
-  word-break: break-all;
 }
+
+.close-btn {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: #ff5c5c;
+  border: none;
+  color: white;
+  font-size: 1.2em;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 3px 8px;
+}
+
+.button-group {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.button-group button {
+  padding: 8px 12px;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+}
+
+.button-group button:hover {
+  background-color: #45a049;
+}
+
 </style>
