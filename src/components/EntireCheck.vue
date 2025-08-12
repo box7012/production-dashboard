@@ -1,9 +1,9 @@
 
 <template>
-  <div class="summary-container">
-    <h2>전체 라인별 생산 현황</h2>
+  <div v-if="chartData" class="check-chart-section">
+    <h3>Entire Check</h3>
     <div class="chart-wrapper">
-        <Bar :data="chartData" :options="chartOptions" />
+      <Bar :data="chartData" :options="chartOptions" />
     </div>
   </div>
 </template>
@@ -23,32 +23,22 @@ import {
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default {
-  name: 'ProductionSummary',
+  name: 'EntrieCheck',
   components: { Bar },
   props: {
-    summaryData: {
-      type: Object,
-      required: true
-    }
-  },
-  computed: {
-    chartData() {
-      return this.summaryData;
-    }
+    chartData: Object,
   },
   data() {
     return {
       chartOptions: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'y', // 이 옵션이 가로 막대 차트를 만듭니다.
         plugins: {
           legend: {
             position: 'top',
           },
           title: {
-            display: true,
-            text: '라인별 생산량 vs 목표량'
+            display: false,
           }
         },
         scales: {
@@ -56,32 +46,31 @@ export default {
             beginAtZero: true,
             title: {
                 display: true,
-                text: '생산량 (개)'
+                text: '수량'
             }
           },
           y: {
             title: {
                 display: true,
-                text: '라인'
+                text: '시간/날짜/월'
             }
           }
         }
       }
-    }
-  }
+    };
+  },
 }
 </script>
 
 <style scoped>
-.summary-container {
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    min-width: 800px;
+.check-chart-section {
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px; /* 아래 여백 추가 */
 }
 .chart-wrapper {
-    position: relative;
-    height: 400px; /* 필요에 따라 높이 조절 */
+  position: relative;
+  height: 250px; /* 차트 높이 조절 */
 }
 </style>

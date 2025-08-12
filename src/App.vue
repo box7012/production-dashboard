@@ -63,6 +63,10 @@
               v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
               :chartData="dashboardData[currentTab].ocrCheck.chartData"
             />
+            <EntireCheck 
+              v-if="dashboardData[currentTab] && dashboardData[currentTab].entireCheck"
+              :chartData="dashboardData[currentTab].entireCheck.chartData"
+            />
             <SurfaceCheck 
               v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
               :chartData="dashboardData[currentTab].surfaceCheck.chartData"
@@ -90,6 +94,7 @@ import DefectCheck from './components/DefectCheck.vue'
 import ChamferCheck from './components/ChamferCheck.vue'
 import OCRCheck from './components/OCRCheck.vue'
 import SurfaceCheck from './components/SurfaceCheck.vue'
+import EntireCheck from './components/EntireCheck.vue'
 import { login as apiLogin } from './services/auth.js'
 import WorkerImageViewerVue from './components/WorkerImageViewer.vue';
 
@@ -262,7 +267,7 @@ const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => 
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck },
   data() {
     const weeklyDataForDefects = generateWeeklyData(true);
     const monthlyDataForDefects = generateMonthlyData(true);
@@ -319,6 +324,14 @@ export default {
     };
     initialSurfaceCheck.chartData = generateCheckChartData(initialSurfaceCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
 
+    const initialEntireCheck = {
+      daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24}, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 15) + 1) },
+      weekly: generateWeeklyData(false),
+      monthly: generateMonthlyData(false),
+    };
+    initialEntireCheck.chartData = generateCheckChartData(initialEntireCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
+
+
     return {
       tabs: ['전체 현황', 'D02', 'D07', 'D14', 'D20'],
       currentTab: '전체 현황',
@@ -332,6 +345,7 @@ export default {
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
+          entireCheck: initialEntireCheck,
         },
         D07: {
           cards: generateCardData('daily'),
@@ -339,6 +353,7 @@ export default {
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
+          entireCheck: initialEntireCheck,
         },
         D14: {
           cards: generateCardData('daily'),
@@ -346,6 +361,7 @@ export default {
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
+          entireCheck: initialEntireCheck,
         },
         D20: {
           cards: generateCardData('daily'),
@@ -353,6 +369,7 @@ export default {
           chamferCheck: initialChamferCheck,
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
+          entireCheck: initialEntireCheck,
         },
         workMode: 'production_manager', 
       },
@@ -469,6 +486,10 @@ export default {
           if (currentDashboardData.surfaceCheck) {
             currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, newRange, false);
           }
+          // entireCheck 차트 업데이트
+          if (currentDashboardData.entireCheck) {
+            currentDashboardData.entireCheck.chartData = generateCheckChartData(currentDashboardData.entireCheck, newRange, false);
+          }
         }
       }
     },
@@ -508,6 +529,9 @@ export default {
           }
           if (currentDashboardData.surfaceCheck) {
             currentDashboardData.surfaceCheck.chartData = generateCheckChartData(currentDashboardData.surfaceCheck, timeRangeToApply, false);
+          }
+          if (currentDashboardData.entireCheck) {
+            currentDashboardData.entireCheck.chartData = generateCheckChartData(currentDashboardData.entireCheck, timeRangeToApply, false);
           }
         }
       }
