@@ -51,9 +51,9 @@
               v-if="dashboardData[currentTab].entireCheck"
               :chartData="dashboardData[currentTab].entireCheck.chartData"
             />
-            <ChamferCheck 
-              v-if="dashboardData[currentTab].chamferCheck"
-              :chartData="dashboardData[currentTab].chamferCheck.chartData"
+            <CenterPointCheck 
+              v-if="dashboardData[currentTab].centerPointCheck"
+              :chartData="dashboardData[currentTab].centerPointCheck.chartData"
             />
             <DefectChart
               :defectChartData="dashboardData[currentTab].defects.chartData" 
@@ -71,6 +71,10 @@
             <SurfaceCheck 
               v-if="dashboardData[currentTab].surfaceCheck"
               :chartData="dashboardData[currentTab].surfaceCheck.chartData"
+            />
+            <ChamferCheck 
+              v-if="dashboardData[currentTab].chamferCheck"
+              :chartData="dashboardData[currentTab].chamferCheck.chartData"
             />
           </div>
           <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
@@ -99,6 +103,7 @@ import SurfaceCheck from './components/SurfaceCheck.vue'
 import EntireCheck from './components/EntireCheck.vue'
 import { login as apiLogin } from './services/auth.js'
 import WorkerImageViewerVue from './components/WorkerImageViewer.vue';
+import CenterPointCheck from './components/CenterPointCheck.vue';
 
 // --- 샘플 데이터 생성 로직 ---
 const generateWeeklyData = (isDefect = false) => {
@@ -269,7 +274,7 @@ const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => 
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck, DefectChart },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck, DefectChart, CenterPointCheck },
   data() {
     const weeklyDataForDefects = generateWeeklyData(true);
     const monthlyDataForDefects = generateMonthlyData(true);
@@ -335,6 +340,14 @@ export default {
     };
     initialEntireCheck.chartData = generateCheckChartData(initialEntireCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
 
+    const initialCenterPointCheck = {
+      daily: { labels: baseDefectData.daily.labels, okCount: Array.from({ length: 24}, () => Math.floor(Math.random() * 1000) + 500), ngCount: Array.from({ length: 24 }, () => Math.floor(Math.random() * 15) + 1) },
+      weekly: generateWeeklyData(false),
+      monthly: generateMonthlyData(false),
+    };
+    initialCenterPointCheck.chartData = generateCheckChartData(initialCenterPointCheck, initialDefects.D02.selectedTimeRange, false); // D02의 초기 시간 범위 사용
+
+
 
     return {
       tabs: ['전체 현황', 'D02', 'D07', 'D14', 'D20'],
@@ -350,6 +363,7 @@ export default {
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
           entireCheck: initialEntireCheck,
+          centerPointCheck: initialCenterPointCheck,
         },
         D07: {
           cards: generateCardData('daily'),
@@ -358,6 +372,7 @@ export default {
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
           entireCheck: initialEntireCheck,
+          centerPointCheck: initialCenterPointCheck,
         },
         D14: {
           cards: generateCardData('daily'),
@@ -366,6 +381,7 @@ export default {
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
           entireCheck: initialEntireCheck,
+          centerPointCheck: initialCenterPointCheck,
         },
         D20: {
           cards: generateCardData('daily'),
@@ -374,6 +390,7 @@ export default {
           ocrCheck: initialOCRCheck,
           surfaceCheck: initialSurfaceCheck,
           entireCheck: initialEntireCheck,
+          centerPointCheck: initialCenterPointCheck,
         },
         workMode: 'production_manager', 
       },
@@ -494,6 +511,10 @@ export default {
           if (currentDashboardData.entireCheck) {
             currentDashboardData.entireCheck.chartData = generateCheckChartData(currentDashboardData.entireCheck, newRange, false);
           }
+          // entireCheck 차트 업데이트
+          if (currentDashboardData.centerPointCheck) {
+            currentDashboardData.centerPointCheck.chartData = generateCheckChartData(currentDashboardData.centerPointCheck, newRange, false);
+          }
         }
       }
     },
@@ -536,6 +557,9 @@ export default {
           }
           if (currentDashboardData.entireCheck) {
             currentDashboardData.entireCheck.chartData = generateCheckChartData(currentDashboardData.entireCheck, timeRangeToApply, false);
+          }
+          if (currentDashboardData.centerPointCheck) {
+            currentDashboardData.centerPointCheck.chartData = generateCheckChartData(currentDashboardData.centerPointCheck, timeRangeToApply, false);
           }
         }
       }
