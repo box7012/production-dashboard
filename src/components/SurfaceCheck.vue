@@ -1,7 +1,7 @@
 
 <template>
   <div v-if="chartData" class="check-chart-section">
-    <h3>Surface Check</h3>
+    <h3>대외경 검사</h3>
     <div class="chart-wrapper">
       <Bar :data="chartData" :options="chartOptions" />
     </div>

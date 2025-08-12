@@ -35,18 +35,27 @@
             작업자
           </button>
         </div>
-          <!-- admin인 경우에만 보이는 기존 콘텐츠 -->
+        <!-- admin인 경우에만 보이는 기존 콘텐츠 -->
         <div v-if="userMode === 'admin' || (userMode === 'general' && workMode === 'production_manager')">
           <DefectCheck 
             :current-range="currentTab === '전체 현황' ? overallTimeRange : dashboardData[currentTab]?.defects?.selectedTimeRange || 'daily'"
             @update:timeRange="handleTimeRangeChange"
           />
           <ProductionSummary v-if="currentTab === '전체 현황'" :summary-data="summaryChartData" />
-          <div v-else>
+          <div v-else-if="dashboardData[currentTab]">
             <Dashboard
-              v-if="dashboardData[currentTab]"
               :title="currentTab"
               :cards="dashboardData[currentTab].cards"
+            />
+            <EntireCheck 
+              v-if="dashboardData[currentTab].entireCheck"
+              :chartData="dashboardData[currentTab].entireCheck.chartData"
+            />
+            <ChamferCheck 
+              v-if="dashboardData[currentTab].chamferCheck"
+              :chartData="dashboardData[currentTab].chamferCheck.chartData"
+            />
+            <DefectChart
               :defectChartData="dashboardData[currentTab].defects.chartData" 
               :selectedDefectType="dashboardData[currentTab].defects.selectedDefect" 
               :defectTypes="dashboardData[currentTab].defects.defectTypes" 
@@ -55,20 +64,12 @@
               @update:targetProd="handleUpdateTargetProd"
               @update:defectType="handleDefectChange"
             />
-            <ChamferCheck 
-              v-if="dashboardData[currentTab] && dashboardData[currentTab].chamferCheck"
-              :chartData="dashboardData[currentTab].chamferCheck.chartData"
-            />
             <OCRCheck 
-              v-if="dashboardData[currentTab] && dashboardData[currentTab].ocrCheck"
+              v-if="dashboardData[currentTab].ocrCheck"
               :chartData="dashboardData[currentTab].ocrCheck.chartData"
             />
-            <EntireCheck 
-              v-if="dashboardData[currentTab] && dashboardData[currentTab].entireCheck"
-              :chartData="dashboardData[currentTab].entireCheck.chartData"
-            />
             <SurfaceCheck 
-              v-if="dashboardData[currentTab] && dashboardData[currentTab].surfaceCheck"
+              v-if="dashboardData[currentTab].surfaceCheck"
               :chartData="dashboardData[currentTab].surfaceCheck.chartData"
             />
           </div>
@@ -87,6 +88,7 @@
 
 <script>
 import Dashboard from './components/Dashboard.vue';
+import DefectChart from './components/DefectChart.vue';
 import FileDownloadTable from './components/FileDownloadTable.vue';
 import LoginView from './components/Login.vue' // The file is Login.vue, but component name is LoginView
 import ProductionSummary from './components/ProductionSummary.vue'
@@ -267,7 +269,7 @@ const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => 
 
 export default {
   name: 'App',
-  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck },
+  components: { Dashboard, LoginView, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck, DefectChart },
   data() {
     const weeklyDataForDefects = generateWeeklyData(true);
     const monthlyDataForDefects = generateMonthlyData(true);
@@ -301,6 +303,8 @@ export default {
     Object.values(initialDefects).forEach(defects => {
       defects.chartData = generateCheckChartData(defects, defects.selectedTimeRange, true) // 초기 로딩은 daily
     })
+
+  
 
     // 새로운 체크 항목 데이터
     const initialChamferCheck = {
