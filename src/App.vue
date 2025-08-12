@@ -105,6 +105,7 @@ import { login as apiLogin } from './services/auth.js'
 import WorkerImageViewerVue from './components/WorkerImageViewer.vue';
 import CenterPointCheck from './components/CenterPointCheck.vue';
 
+
 // --- 샘플 데이터 생성 로직 ---
 const generateWeeklyData = (isDefect = false) => {
   const labels = [];

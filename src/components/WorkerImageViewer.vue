@@ -18,7 +18,7 @@
         <p>{{ image }}</p>
       </div>
     </div>
-
+    <WorkerImageLabelCheckVue/>
     <!-- 모달 -->
     <div v-if="selectedImage" class="modal" @click.self="closeModal">
       <span class="close-button" @click="closeModal">&times;</span>
@@ -29,8 +29,12 @@
 </template>
 
 <script>
+
+import WorkerImageLabelCheckVue from './WorkerImageLabelCheck.vue';
+
 export default {
   name: 'WorkerImageViewer',
+  components: { WorkerImageLabelCheckVue },
   props: {
     tab: {
       type: String,
