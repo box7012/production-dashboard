@@ -12,10 +12,17 @@
           <input type="password" id="password" v-model="password" required />
         </div>
         <p v-if="error" class="error-message">{{ error }}</p>
-        <button type="submit" :disabled="loading" class="login-button">{{ loading ? '로그인 중...' : '로그인' }}</button>
+        <button type="submit" :disabled="loading" class="login-button">
+          {{ loading ? '로그인 중...' : '로그인' }}
+        </button>
+        <button type="button" @click="goToSignup" class="login-button">
+          회원가입
+        </button>
       </form>
+
       <div class="demo-credentials">
         <p><strong>테스트 계정:</strong></p>
+        <p>아이디: superadmin / 비밀번호: password</p>
         <p>아이디: admin / 비밀번호: password</p>
         <p>아이디: user / 비밀번호: password</p>
       </div>
@@ -37,16 +44,38 @@ export default {
   },
   methods: {
     async handleLogin() {
-      this.error = null
-      this.loading = true
+      this.error = null;
+      this.loading = true;
       try {
-        this.$emit('login', { username: this.username, password: this.password })
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Dummy authentication logic based on provided test accounts
+        if (
+          (this.username === 'superadmin' && this.password === 'password') ||
+          (this.username === 'admin' && this.password === 'password') ||
+          (this.username === 'user' && this.password === 'password')
+        ) {
+          // Store user info in session storage to persist login state
+          sessionStorage.setItem('user', JSON.stringify({ username: this.username }));
+
+          if (this.username === 'superadmin') {
+            this.$router.push('/superadmin');
+          } else {
+            this.$router.push('/dashboard');
+          }
+        } else {
+          this.error = '잘못된 사용자 이름 또는 비밀번호입니다.';
+        }
       } catch (err) {
-        this.error = err.message || '로그인 처리 중 오류가 발생했습니다.'
+        this.error = err.message || '로그인 처리 중 오류가 발생했습니다.';
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
+    goToSignup() {
+      this.$router.push('/signup')
+    }
   },
 }
 </script>

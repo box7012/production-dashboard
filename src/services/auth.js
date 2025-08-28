@@ -22,6 +22,16 @@ export const login = (username, password) => {
             role: 'general',
           },
         });
+      } else if (username === 'superadmin' && password === 'password') {
+        console.log('Mock Auth: Login successful for SUPERADMIN');
+        resolve({
+          success: true,
+          token: 'mock-jwt-token-for-superadmin-user',
+          user: {
+            name: 'Super Admin',
+            role: 'superadmin',
+          },
+        });
       } else {
         console.error('Mock Auth: Invalid credentials');
         reject(new Error('아이디 또는 비밀번호가 잘못되었습니다.'));
