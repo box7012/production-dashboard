@@ -24,60 +24,58 @@
         <p><strong>테스트 계정:</strong></p>
         <p>아이디: superadmin / 비밀번호: password</p>
         <p>아이디: admin / 비밀번호: password</p>
-        <p>아이디: user / 비밀번호: password</p>
+        <p>아이디: user14 / 비밀번호: password</p>
+        <p>아이디: user20 / 비밀번호: password</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { login } from "../services/auth"; // 실제 파일 경로로 수정하세요
+
 export default {
-  name: 'LoginView',
-  emits: ['login'],
+  name: "LoginView",
+  emits: ["login"],
   data() {
     return {
-      username: '',
-      password: '',
+      username: "",
+      password: "",
       error: null,
       loading: false,
-    }
+    };
   },
   methods: {
     async handleLogin() {
       this.error = null;
       this.loading = true;
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // login.js 호출
+        const response = await login(this.username, this.password);
 
-        // Dummy authentication logic based on provided test accounts
-        if (
-          (this.username === 'superadmin' && this.password === 'password') ||
-          (this.username === 'admin' && this.password === 'password') ||
-          (this.username === 'user' && this.password === 'password')
-        ) {
-          // Store user info in session storage to persist login state
-          sessionStorage.setItem('user', JSON.stringify({ username: this.username }));
-
-          if (this.username === 'superadmin') {
-            this.$router.push('/superadmin');
-          } else {
-            this.$router.push('/dashboard');
+        if (response.success) {
+          // 세션에 유저 정보 저장 (role, line 포함)
+          sessionStorage.setItem("user", JSON.stringify(response.user));
+          // 역할/라인에 따라 라우팅
+          if (response.user.role === "superadmin") {
+            this.$router.push("/superadmin");
+          } else if (response.user.role === "admin") {
+            this.$router.push("/dashboard");
+          } else if (response.user.role === "general") {
+            this.$router.push("/workerpage");
           }
-        } else {
-          this.error = '잘못된 사용자 이름 또는 비밀번호입니다.';
         }
       } catch (err) {
-        this.error = err.message || '로그인 처리 중 오류가 발생했습니다.';
+        this.error = err.message || "로그인 처리 중 오류가 발생했습니다.";
       } finally {
         this.loading = false;
       }
     },
     goToSignup() {
-      this.$router.push('/signup')
-    }
+      this.$router.push("/signup");
+    },
   },
-}
+};
 </script>
 
 <style scoped>

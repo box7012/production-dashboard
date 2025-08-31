@@ -10,9 +10,10 @@ export const login = (username, password) => {
           user: {
             name: 'Admin User',
             role: 'admin',
+            line: 'none',
           },
         });
-      } else if (username === 'user' && password === 'password') {
+      } else if (username === 'user14' && password === 'password') {
         console.log('Mock Auth: Login successful for GENERAL user');
         resolve({
           success: true,
@@ -20,6 +21,18 @@ export const login = (username, password) => {
           user: {
             name: 'General User',
             role: 'general',
+            line: 'D14',
+          },
+        });
+      } else if (username === 'user20' && password === 'password') {
+        console.log('Mock Auth: Login successful for GENERAL user');
+        resolve({
+          success: true,
+          token: 'mock-jwt-token-for-general-user',
+          user: {
+            name: 'General User',
+            role: 'general',
+            line: 'D20',
           },
         });
       } else if (username === 'superadmin' && password === 'password') {
@@ -30,6 +43,7 @@ export const login = (username, password) => {
           user: {
             name: 'Super Admin',
             role: 'superadmin',
+            line: 'none',
           },
         });
       } else {

@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from './components/Login.vue'
 import SignupPage from './components/SignupPage.vue'
 import TemplateView from './components/TemplateView.vue'
+import WorkerDashboard from './components/WorkerDashboard.vue'
 import SuperAdminDashboard from './components/SuperAdminDashboard.vue'
 
 const routes = [
@@ -13,6 +14,7 @@ const routes = [
   { path: '/signup', component: SignupPage },
   { path: '/dashboard', component: TemplateView }, // 로그인 후 메인 레이아웃
   { path: '/superadmin', component: SuperAdminDashboard },
+  { path: '/workerpage', component: WorkerDashboard },
 ]
 
 const router = createRouter({

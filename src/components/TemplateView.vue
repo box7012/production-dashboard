@@ -76,14 +76,13 @@
               :chartData="dashboardData[currentTab].chamferCheck.chartData"
             />
           </div>
-          <FileDownloadTable v-if="userMode === 'admin'" :currentTab="currentTab" />
         </div>
-          <template v-else-if="workMode === 'worker'">
-            <WorkerImageViewerVue 
-              :key="workMode"
-              :tab="currentTab" 
-            />
-          </template>
+        <template v-else-if="workMode === 'worker'">
+          <WorkerImageViewerVue 
+            :key="workMode"
+            :tab="currentTab" 
+          />
+        </template>
       </section>
     </div>
   </div>
@@ -92,14 +91,12 @@
 <script>
 import Dashboard from '../components/Dashboard.vue';
 import DefectChart from '../components/DefectChart.vue';
-import FileDownloadTable from '../components/FileDownloadTable.vue';
 import ProductionSummary from '../components/ProductionSummary.vue'
 import DefectCheck from '../components/DefectCheck.vue'
 import ChamferCheck from '../components/ChamferCheck.vue'
 import OCRCheck from '../components/OCRCheck.vue'
 import SurfaceCheck from '../components/SurfaceCheck.vue'
 import EntireCheck from '../components/EntireCheck.vue'
-
 import WorkerImageViewerVue from '../components/WorkerImageViewer.vue';
 import CenterPointCheck from '../components/CenterPointCheck.vue';
 
@@ -273,7 +270,7 @@ const generateCheckChartData = (checkData, timeRange, isDefectChart = false) => 
 
 export default {
   name: 'App',
-  components: { Dashboard, FileDownloadTable, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck, DefectChart, CenterPointCheck },
+  components: { Dashboard, ProductionSummary, DefectCheck, ChamferCheck, OCRCheck, SurfaceCheck, WorkerImageViewerVue, EntireCheck, DefectChart, CenterPointCheck },
   data() {
     const weeklyDataForDefects = generateWeeklyData(true);
     const monthlyDataForDefects = generateMonthlyData(true);
